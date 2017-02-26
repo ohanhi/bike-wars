@@ -16,9 +16,8 @@ speedC =
 
 
 type alias Model =
-    { position :
-        Vec2
-        -- , trail : List Vec2
+    { position : Vec2
+    , trail : List Vec2
     , direction : Direction
     }
 
@@ -31,6 +30,7 @@ type Msg
 init : ( Model, Cmd Msg )
 init =
     ( { position = vec2 20 20
+      , trail = [ vec2 20 20 ]
       , direction = East
       }
     , Cmd.none
@@ -57,7 +57,10 @@ pureUpdate msg model =
             { model | position = computePosition model.direction model.position diff }
 
         KeyDown key ->
-            { model | direction = computeDirection model.direction key }
+            { model
+                | direction = computeDirection model.direction key
+                , trail = model.position :: model.trail
+            }
 
 
 computePosition : Direction -> Vec2 -> Float -> Vec2
@@ -107,9 +110,18 @@ view model =
             ]
             (svgView model)
         , table []
-            [ tr [] [ td [] [ Html.text "x" ], td [] [ Html.text (toString (Vec2.getX model.position)) ] ]
-            , tr [] [ td [] [ Html.text "y" ], td [] [ Html.text (toString (Vec2.getY model.position)) ] ]
-            , tr [] [ td [] [ Html.text "dir" ], td [] [ Html.text (toString model.direction) ] ]
+            [ tr []
+                [ td [] [ Html.text "x" ]
+                , td [] [ Html.text (toString (Vec2.getX model.position)) ]
+                ]
+            , tr []
+                [ td [] [ Html.text "y" ]
+                , td [] [ Html.text (toString (Vec2.getY model.position)) ]
+                ]
+            , tr []
+                [ td [] [ Html.text "dir" ]
+                , td [] [ Html.text (toString model.direction) ]
+                ]
             ]
         ]
 
@@ -117,11 +129,14 @@ view model =
 svgView : Model -> List (Svg never)
 svgView model =
     let
+        bikeSize =
+            6
+
         posX =
-            toString <| Vec2.getX model.position
+            Vec2.getX model.position
 
         posY =
-            toString <| Vec2.getY model.position
+            Vec2.getY model.position
 
         rotation =
             case model.direction of
@@ -138,13 +153,19 @@ svgView model =
                     "270"
 
         transformValue =
-            "translate(" ++ posX ++ " " ++ posY ++ ") rotate(" ++ rotation ++ " 10 10)"
+            "translate(" ++ toString (posX - bikeSize) ++ " " ++ toString (posY - bikeSize) ++ ") rotate(" ++ rotation ++ " " ++ toString bikeSize ++ " " ++ toString bikeSize ++ ")"
+
+        trailPoints =
+            (model.position :: model.trail)
+                |> List.map (\vec -> toString (Vec2.getX vec) ++ "," ++ toString (Vec2.getY vec))
+                |> String.join " "
     in
         [ rect [ width "400", height "300", stroke "gray", strokeWidth "6", fill "blue" ] []
         , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill "white" ] [ Svg.text "Bike Wars" ]
+        , polyline [ fill "none", stroke "red", strokeWidth "3", points trailPoints ] []
         , image
-            [ width "15"
-            , height "15"
+            [ width (toString (2 * bikeSize))
+            , height (toString (2 * bikeSize))
             , xlinkHref "img/bike.svg"
             , transform (transformValue)
             ]
