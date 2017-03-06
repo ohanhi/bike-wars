@@ -14,4 +14,5 @@ type alias Bike =
     , trail : List Vec2
     , collided : Bool
     , direction : Direction
+    , color : String
     }

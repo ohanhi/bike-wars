@@ -15,6 +15,7 @@ initBike =
     , trail = [ vec2 20 20 ]
     , collided = False
     , direction = East
+    , color = "yellow"
     }
 
 
@@ -66,19 +67,48 @@ view bike =
                     "270"
 
         transformValue =
-            "translate(" ++ toString (posX - bikeSize) ++ " " ++ toString (posY - bikeSize) ++ ") rotate(" ++ rotation ++ " " ++ toString bikeSize ++ " " ++ toString bikeSize ++ ")"
+            String.join ""
+                [ "translate("
+                , toString (posX - bikeSize)
+                , " "
+                , toString (posY - bikeSize)
+                , ") rotate("
+                , rotation
+                , " "
+                , toString bikeSize
+                , " "
+                , toString bikeSize
+                , ")"
+                ]
 
         trailPoints =
             (bike.position :: bike.trail)
                 |> List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec))
                 |> String.join " "
     in
-        [ polyline [ fill "none", stroke "red", strokeWidth "3", points trailPoints ] []
-        , image
+        [ polyline [ fill "none", stroke bike.color, strokeWidth "3", points trailPoints ] []
+        , g
             [ width (toString (2 * bikeSize))
             , height (toString (2 * bikeSize))
-            , xlinkHref "img/bike.svg"
             , transform (transformValue)
             ]
-            []
+            [ bikeForm bikeSize bike.color ]
+        ]
+
+
+bikeForm : Float -> String -> Svg msg
+bikeForm bikeSize color =
+    svg
+        [ width (toString (2 * bikeSize))
+        , height (toString (2 * bikeSize))
+        , viewBox "0 0 210 297"
+        ]
+        [ g []
+            [ Svg.path
+                [ d "m 185.20834,126.15476 -66.86084,92.02605 -108.183103,-35.15082 0,-113.750451 L 118.3475,34.128718 Z"
+                , Svg.Attributes.style ("fill:" ++ color)
+                , transform "matrix(0,-1.690983,1.1396473,0,-39.07253,313.47282)"
+                ]
+                []
+            ]
         ]
