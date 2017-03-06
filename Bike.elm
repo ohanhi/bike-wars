@@ -9,13 +9,13 @@ import Direction exposing (..)
 import BikePhysics exposing (..)
 
 
-initBike : Bike
-initBike =
+initBike : String -> Bike
+initBike color =
     { position = vec2 20 20
     , trail = [ vec2 20 20 ]
     , collided = False
     , direction = East
-    , color = "yellow"
+    , color = color
     }
 
 

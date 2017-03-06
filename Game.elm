@@ -31,7 +31,7 @@ type Msg
 
 init : ( Model, Cmd Msg )
 init =
-    ( { bike = initBike
+    ( { bike = initBike "yellow"
       , status = NewGame
       }
     , Cmd.none
@@ -82,7 +82,7 @@ pureUpdate msg model =
                 _ ->
                     if key == Space then
                         { model
-                            | bike = Bike.initBike
+                            | bike = Bike.initBike "yellow"
                             , status = Running
                         }
                     else

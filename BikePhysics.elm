@@ -120,17 +120,25 @@ isCollision direction pos linePoints =
             (List.map (Vec2.distance pos)) >> (List.any lessThanEpsilon)
 
         lessThanEpsilon x =
-            x < 2
+            x < 5
     in
         case direction of
             North ->
-                compareTo horizontals
+                horizontals
+                    |> List.filter (\v -> getY v < posY)
+                    |> compareTo
 
             South ->
-                compareTo horizontals
+                horizontals
+                    |> List.filter (\v -> getY v >= posY)
+                    |> compareTo
 
             East ->
-                compareTo verticals
+                verticals
+                    |> List.filter (\v -> getX v > posX)
+                    |> compareTo
 
             West ->
-                compareTo verticals
+                verticals
+                    |> List.filter (\v -> getX v <= posX)
+                    |> compareTo
