@@ -87,12 +87,7 @@ view bike =
                 |> String.join " "
     in
         [ polyline [ fill "none", stroke bike.color, strokeWidth "3", points trailPoints ] []
-        , g
-            [ width (toString (2 * bikeSize))
-            , height (toString (2 * bikeSize))
-            , transform (transformValue)
-            ]
-            [ bikeForm bikeSize bike.color ]
+        , g [ transform (transformValue) ] [ bikeForm bikeSize bike.color ]
         ]
 
 
