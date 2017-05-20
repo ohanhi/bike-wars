@@ -9,9 +9,13 @@ type Line
     | Vertical ( Vec2, Vec2 )
 
 
+type alias Trail =
+    List (List Vec2)
+
+
 type alias Bike =
     { position : Vec2
-    , trail : List Vec2
+    , trail : Trail
     , collided : Bool
     , direction : Direction
     , color : String

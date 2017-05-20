@@ -12,7 +12,7 @@ import BikePhysics exposing (..)
 initBike : String -> Bike
 initBike color =
     { position = vec2 20 20
-    , trail = [ vec2 20 20 ]
+    , trail = [ [ vec2 20 20 ] ]
     , collided = False
     , direction = East
     , color = color
@@ -27,8 +27,7 @@ move diff bike =
                 bike.position
             else
                 computePosition bike.direction bike.position diff
-        , collided =
-            isCollision bike.direction bike.position bike.trail
+        , collided = isCollision bike.direction bike.position bike.trail
     }
 
 
@@ -36,7 +35,7 @@ turn : Keyboard.Extra.Key -> Bike -> Bike
 turn key bike =
     { bike
         | direction = computeDirection bike.direction key
-        , trail = bike.position :: bike.trail
+        , trail = cons bike.position bike.trail
     }
 
 
@@ -82,8 +81,8 @@ view bike =
                 ]
 
         trailPoints =
-            (bike.position :: bike.trail)
-                |> List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec))
+            (cons bike.position bike.trail)
+                |> List.concatMap (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec)))
                 |> String.join " "
     in
         [ polyline [ fill "none", stroke bike.color, strokeWidth "3", points trailPoints ] []

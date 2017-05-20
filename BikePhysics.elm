@@ -7,6 +7,16 @@ import Direction exposing (..)
 import Types exposing (..)
 
 
+cons : Vec2 -> Trail -> Trail
+cons point trail =
+    case trail of
+        [] ->
+            [ [ point ] ]
+
+        first :: rest ->
+            (point :: first) :: rest
+
+
 computePosition : Direction -> Vec2 -> Float -> Vec2
 computePosition direction position diff =
     let
@@ -43,14 +53,21 @@ computeDirection direction key =
             direction
 
 
-vecListToLines : List Line -> List Vec2 -> List Line
-vecListToLines acc list =
-    case list of
-        a :: b :: tail ->
-            vecListToLines ((orderedTuple a b) :: acc) (b :: tail)
+trailToLines : Trail -> List Line
+trailToLines =
+    let
+        recurse acc list =
+            case list of
+                [] ->
+                    acc
 
-        _ ->
-            acc
+                _ :: [] ->
+                    acc
+
+                a :: b :: tail ->
+                    recurse ((orderedTuple a b) :: acc) (b :: tail)
+    in
+        List.concatMap (recurse [])
 
 
 orderedTuple : Vec2 -> Vec2 -> Line
@@ -101,14 +118,14 @@ reduceHorizontal posX line =
             Nothing
 
 
-isCollision : Direction -> Vec2 -> List Vec2 -> Bool
-isCollision direction pos linePoints =
+isCollision : Direction -> Vec2 -> Trail -> Bool
+isCollision direction pos trail =
     let
         ( posX, posY ) =
             Vec2.toTuple pos
 
         lines =
-            gameBounds ++ (vecListToLines [] linePoints)
+            gameBounds ++ (trailToLines trail)
 
         verticals =
             List.filterMap (reduceVertical posY) lines
