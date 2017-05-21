@@ -107,3 +107,13 @@ bikeForm bikeSize color =
                 []
             ]
         ]
+
+
+cons : Vec2 -> Trail -> Trail
+cons point trail =
+    case trail of
+        [] ->
+            [ [ point ] ]
+
+        first :: rest ->
+            (point :: first) :: rest

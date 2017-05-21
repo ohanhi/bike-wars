@@ -1,20 +1,16 @@
-module BikePhysics exposing (..)
+module BikePhysics exposing (isCollision, computePosition, computeDirection)
+
+{-| Doctest imports
+
+    >>> import Math.Vector2 exposing (vec2)
+    >>> import Direction exposing (..)
+-}
 
 import Math.Vector2 as Vec2 exposing (Vec2, vec2, getX, getY)
 import Keyboard.Extra exposing (Key(..))
 import Constants exposing (..)
 import Direction exposing (..)
 import Types exposing (..)
-
-
-cons : Vec2 -> Trail -> Trail
-cons point trail =
-    case trail of
-        [] ->
-            [ [ point ] ]
-
-        first :: rest ->
-            (point :: first) :: rest
 
 
 computePosition : Direction -> Vec2 -> Float -> Vec2
@@ -115,6 +111,32 @@ reduceHorizontal posX line =
             Nothing
 
 
+{-| This function should find any sort of collision with the current walls.
+
+Vertical line, moving horizontally
+    >>> isCollision East (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    True
+    >>> isCollision West (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    False
+
+Horizontal line, moving vertically
+    >>> isCollision South (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    True
+    >>> isCollision North (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    False
+
+Horizontal line, moving horizontally
+    >>> isCollision East (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    True
+    >>> isCollision West (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    True
+
+Vertical line, moving vertically
+    >>> isCollision South (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    True
+    >>> isCollision North (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    True
+-}
 isCollision : Direction -> Vec2 -> Trail -> Bool
 isCollision direction pos trail =
     let
