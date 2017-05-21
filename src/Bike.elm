@@ -7,6 +7,7 @@ import Math.Vector2 as Vec2 exposing (Vec2, vec2, getX, getY)
 import Types exposing (..)
 import Direction exposing (..)
 import BikePhysics exposing (..)
+import Constants exposing (bikeSize)
 
 
 initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
@@ -18,6 +19,33 @@ initBike controls color ( x, y ) direction =
     , color = color
     , controls = controls
     }
+
+
+frontWall : Bike -> List Vec2
+frontWall bike =
+    let
+        vertical =
+            [ vec2 (getX bike.position) (getY bike.position - bikeSize)
+            , vec2 (getX bike.position) (getY bike.position + bikeSize)
+            ]
+
+        horizontal =
+            [ vec2 (getX bike.position - bikeSize) (getY bike.position)
+            , vec2 (getX bike.position + bikeSize) (getY bike.position)
+            ]
+    in
+        case bike.direction of
+            North ->
+                horizontal
+
+            East ->
+                vertical
+
+            South ->
+                horizontal
+
+            West ->
+                vertical
 
 
 move : Float -> Trail -> Bike -> Bike
@@ -43,9 +71,6 @@ turn key bike =
 view : Bike -> List (Svg msg)
 view bike =
     let
-        bikeSize =
-            6
-
         posX =
             getX bike.position
 
@@ -86,7 +111,7 @@ view bike =
                 |> List.concatMap (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec)))
                 |> String.join " "
     in
-        [ polyline [ fill "none", stroke bike.color, strokeWidth "3", points trailPoints ] []
+        [ polyline [ fill "none", stroke bike.color, strokeWidth (toString (bikeSize / 2)), points trailPoints ] []
         , g [ transform (transformValue) ] [ bikeForm bikeSize bike.color ]
         ]
 

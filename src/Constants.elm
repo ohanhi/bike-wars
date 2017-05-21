@@ -4,6 +4,11 @@ import Math.Vector2 exposing (vec2)
 import Types exposing (Line(..))
 
 
+bikeSize : Float
+bikeSize =
+    4
+
+
 speedC : Float
 speedC =
     0.1

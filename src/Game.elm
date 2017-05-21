@@ -19,11 +19,12 @@ type GameStatus
     | GameOver
 
 
+type alias Bikes =
+    ( Bike, Bike )
+
+
 type alias Model =
-    { bikes :
-        { one : Bike
-        , two : Bike
-        }
+    { bikes : Bikes
     , status : GameStatus
     }
 
@@ -33,25 +34,18 @@ type Msg
     | KeyDown Key
 
 
-bikeColors : { one : String, two : String }
-bikeColors =
-    { one = "red"
-    , two = "yellow"
-    }
-
-
-bikeControls : { one : Controls, two : Controls }
-bikeControls =
-    { one = { left = CharA, right = CharD, up = CharW }
-    , two = { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
-    }
-
-
-initBikes : { one : Bike, two : Bike }
+initBikes : Bikes
 initBikes =
-    { one = initBike bikeControls.one bikeColors.one ( 20, h / 2 ) East
-    , two = initBike bikeControls.two bikeColors.two ( w - 20, h / 2 ) West
-    }
+    ( initBike
+        { left = CharA, right = CharD, up = CharW }
+        "#fe5555"
+        ( 20, h / 2 )
+        East
+    , initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
+        "#4eee5b"
+        ( w - 20, h / 2 )
+        West
+    )
 
 
 init : ( Model, Cmd Msg )
@@ -85,19 +79,19 @@ pureUpdate msg model =
     case msg of
         TimeDiff diff ->
             let
+                ( oldOne, oldTwo ) =
+                    model.bikes
+
                 compoundTrail =
-                    model.bikes.one.trail ++ model.bikes.two.trail
+                    oldOne.trail ++ oldTwo.trail
 
-                move =
-                    Bike.move diff compoundTrail
-
-                newBikes =
-                    { one = move model.bikes.one
-                    , two = move model.bikes.two
-                    }
+                (( one, two ) as newBikes) =
+                    ( Bike.move diff (Bike.frontWall oldTwo :: compoundTrail) oldOne
+                    , Bike.move diff (Bike.frontWall oldOne :: compoundTrail) oldTwo
+                    )
 
                 anyCollided =
-                    newBikes.one.collided || newBikes.two.collided
+                    one.collided || two.collided
 
                 status =
                     if anyCollided then
@@ -113,12 +107,13 @@ pureUpdate msg model =
         KeyDown key ->
             case model.status of
                 Running ->
-                    { model
-                        | bikes =
-                            { one = Bike.turn key model.bikes.one
-                            , two = Bike.turn key model.bikes.two
-                            }
-                    }
+                    let
+                        ( one, two ) =
+                            model.bikes
+                    in
+                        { model
+                            | bikes = ( Bike.turn key one, Bike.turn key two )
+                        }
 
                 _ ->
                     if key == Space then
@@ -181,10 +176,13 @@ svgView model =
 
                 _ ->
                     []
+
+        ( one, two ) =
+            model.bikes
     in
-        [ rect [ width (toString w), height (toString h), stroke "gray", strokeWidth "6", fill "blue" ] []
+        [ rect [ width (toString w), height (toString h), stroke "gray", strokeWidth (toString bikeSize), fill "#0009a9" ] []
         , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill "white" ] [ Svg.text "Bike Wars" ]
         ]
-            ++ Bike.view model.bikes.one
-            ++ Bike.view model.bikes.two
+            ++ Bike.view one
+            ++ Bike.view two
             ++ overlay

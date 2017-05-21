@@ -160,21 +160,17 @@ isCollision direction pos trail =
     in
         case direction of
             North ->
-                horizontals
-                    |> List.filter (\v -> getY v < posY)
-                    |> compareTo
+                compareTo (List.filter (\v -> getY v <= posY) horizontals)
+                    || compareTo verticals
 
             South ->
-                horizontals
-                    |> List.filter (\v -> getY v >= posY)
-                    |> compareTo
-
-            East ->
-                verticals
-                    |> List.filter (\v -> getX v > posX)
-                    |> compareTo
+                compareTo (List.filter (\v -> getY v >= posY) horizontals)
+                    || compareTo verticals
 
             West ->
-                verticals
-                    |> List.filter (\v -> getX v <= posX)
-                    |> compareTo
+                compareTo (List.filter (\v -> getX v <= posX) verticals)
+                    || compareTo horizontals
+
+            East ->
+                compareTo (List.filter (\v -> getX v >= posX) verticals)
+                    || compareTo horizontals
