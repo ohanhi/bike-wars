@@ -1,0 +1,17 @@
+{
+  "name": "bike-wars",
+  "version": "1.0.0",
+  "description": "",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "start": "elm-live src/Main.elm",
+    "test": "elm-doc-test && elm-test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ohanhi/bike-wars.git"
+  },
+  "license": "BSD-3-Clause"
+}
