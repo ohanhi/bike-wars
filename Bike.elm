@@ -4,37 +4,38 @@ import Keyboard.Extra
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Math.Vector2 as Vec2 exposing (Vec2, vec2, getX, getY)
-import Types exposing (Bike)
+import Types exposing (..)
 import Direction exposing (..)
 import BikePhysics exposing (..)
 
 
-initBike : String -> Bike
-initBike color =
-    { position = vec2 20 20
-    , trail = [ [ vec2 20 20 ] ]
+initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
+initBike controls color ( x, y ) direction =
+    { position = vec2 x y
+    , trail = [ [ vec2 x y ] ]
     , collided = False
-    , direction = East
+    , direction = direction
     , color = color
+    , controls = controls
     }
 
 
-move : Float -> Bike -> Bike
-move diff bike =
+move : Float -> Trail -> Bike -> Bike
+move diff trail bike =
     { bike
         | position =
             if bike.collided then
                 bike.position
             else
                 computePosition bike.direction bike.position diff
-        , collided = isCollision bike.direction bike.position bike.trail
+        , collided = isCollision bike.direction bike.position trail
     }
 
 
 turn : Keyboard.Extra.Key -> Bike -> Bike
 turn key bike =
     { bike
-        | direction = computeDirection bike.direction key
+        | direction = computeDirection bike.controls bike.direction key
         , trail = cons bike.position bike.trail
     }
 

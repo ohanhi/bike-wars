@@ -40,17 +40,14 @@ computePosition direction position diff =
         Vec2.add position change
 
 
-computeDirection : Direction -> Key -> Direction
-computeDirection direction key =
-    case key of
-        ArrowLeft ->
-            turnLeft direction
-
-        ArrowRight ->
-            turnRight direction
-
-        _ ->
-            direction
+computeDirection : Controls -> Direction -> Key -> Direction
+computeDirection controls direction key =
+    if key == controls.left then
+        turnLeft direction
+    else if key == controls.right then
+        turnRight direction
+    else
+        direction
 
 
 trailToLines : Trail -> List Line

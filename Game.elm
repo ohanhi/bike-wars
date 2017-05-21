@@ -4,12 +4,13 @@ import Html exposing (..)
 import Html.Attributes exposing (style)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Math.Vector2 as Vec2 exposing (Vec2, vec2, getX, getY)
 import AnimationFrame
 import Keyboard.Extra exposing (Key(..))
 import Types exposing (Bike)
 import Bike exposing (..)
 import Constants exposing (..)
+import Direction exposing (..)
+import Types exposing (Controls)
 
 
 type GameStatus
@@ -19,7 +20,10 @@ type GameStatus
 
 
 type alias Model =
-    { bike : Bike
+    { bikes :
+        { one : Bike
+        , two : Bike
+        }
     , status : GameStatus
     }
 
@@ -29,9 +33,30 @@ type Msg
     | KeyDown Key
 
 
+bikeColors : { one : String, two : String }
+bikeColors =
+    { one = "red"
+    , two = "yellow"
+    }
+
+
+bikeControls : { one : Controls, two : Controls }
+bikeControls =
+    { one = { left = CharA, right = CharD, up = CharW }
+    , two = { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
+    }
+
+
+initBikes : { one : Bike, two : Bike }
+initBikes =
+    { one = initBike bikeControls.one bikeColors.one ( 20, h / 2 ) East
+    , two = initBike bikeControls.two bikeColors.two ( w - 20, h / 2 ) West
+    }
+
+
 init : ( Model, Cmd Msg )
 init =
-    ( { bike = initBike "yellow"
+    ( { bikes = initBikes
       , status = NewGame
       }
     , Cmd.none
@@ -60,29 +85,45 @@ pureUpdate msg model =
     case msg of
         TimeDiff diff ->
             let
-                newBike =
-                    Bike.move diff model.bike
+                compoundTrail =
+                    model.bikes.one.trail ++ model.bikes.two.trail
+
+                move =
+                    Bike.move diff compoundTrail
+
+                newBikes =
+                    { one = move model.bikes.one
+                    , two = move model.bikes.two
+                    }
+
+                anyCollided =
+                    newBikes.one.collided || newBikes.two.collided
+
+                status =
+                    if anyCollided then
+                        GameOver
+                    else
+                        Running
             in
                 { model
-                    | bike = newBike
-                    , status =
-                        if newBike.collided then
-                            GameOver
-                        else
-                            Running
+                    | bikes = newBikes
+                    , status = status
                 }
 
         KeyDown key ->
             case model.status of
                 Running ->
                     { model
-                        | bike = Bike.turn key model.bike
+                        | bikes =
+                            { one = Bike.turn key model.bikes.one
+                            , two = Bike.turn key model.bikes.two
+                            }
                     }
 
                 _ ->
                     if key == Space then
                         { model
-                            | bike = Bike.initBike "yellow"
+                            | bikes = initBikes
                             , status = Running
                         }
                     else
@@ -91,28 +132,16 @@ pureUpdate msg model =
 
 view : Model -> Html never
 view model =
-    div []
+    div [ Html.Attributes.style [ ( "background-color", "#222" ) ] ]
         [ svg
-            [ width (toString (2 * w))
-            , height (toString (2 * h))
-            , viewBox ([ 0, 0, w, h ] |> List.map toString |> String.join " ")
-            , Html.Attributes.style [ ( "float", "left" ) ]
+            [ viewBox ([ 0, 0, w, h ] |> List.map toString |> String.join " ")
+            , Html.Attributes.style
+                [ ( "height", "100vh" )
+                , ( "display", "block" )
+                , ( "margin", "0 auto" )
+                ]
             ]
             (svgView model)
-        , table []
-            [ tr []
-                [ td [] [ Html.text "x" ]
-                , td [] [ Html.text (toString (getX model.bike.position)) ]
-                ]
-            , tr []
-                [ td [] [ Html.text "y" ]
-                , td [] [ Html.text (toString (getY model.bike.position)) ]
-                ]
-            , tr []
-                [ td [] [ Html.text "dir" ]
-                , td [] [ Html.text (toString model.bike.direction) ]
-                ]
-            ]
         ]
 
 
@@ -156,5 +185,6 @@ svgView model =
         [ rect [ width (toString w), height (toString h), stroke "gray", strokeWidth "6", fill "blue" ] []
         , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill "white" ] [ Svg.text "Bike Wars" ]
         ]
-            ++ Bike.view model.bike
+            ++ Bike.view model.bikes.one
+            ++ Bike.view model.bikes.two
             ++ overlay
