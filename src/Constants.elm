@@ -31,3 +31,13 @@ gameBounds =
     , Vertical ( vec2 0 0, vec2 0 h )
     , Vertical ( vec2 w 0, vec2 w h )
     ]
+
+
+colors =
+    { blue = "#0009a9"
+    , red = "#fe5555"
+    , green = "#4eee5b"
+    , grey = "#222"
+    , white = "white"
+    , yellow = "yellow"
+    }

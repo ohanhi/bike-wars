@@ -29,3 +29,10 @@ type alias Bike =
     , color : String
     , controls : Controls
     }
+
+
+type alias Explosion =
+    { center : Vec2
+    , size : Float
+    , startTime : Float
+    }

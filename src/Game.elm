@@ -5,12 +5,13 @@ import Html.Attributes exposing (style)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import AnimationFrame
+import Math.Vector2 exposing (vec2)
 import Keyboard.Extra exposing (Key(..))
-import Types exposing (Bike)
-import Bike exposing (..)
+import Bike
+import Explosion
 import Constants exposing (..)
 import Direction exposing (..)
-import Types exposing (Controls)
+import Types exposing (..)
 
 
 type GameStatus
@@ -26,6 +27,7 @@ type alias Bikes =
 type alias Model =
     { bikes : Bikes
     , status : GameStatus
+    , explosions : List Explosion
     }
 
 
@@ -36,13 +38,13 @@ type Msg
 
 initBikes : Bikes
 initBikes =
-    ( initBike
+    ( Bike.initBike
         { left = CharA, right = CharD, up = CharW }
-        "#fe5555"
+        colors.red
         ( 20, h / 2 )
         East
-    , initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
-        "#4eee5b"
+    , Bike.initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
+        colors.green
         ( w - 20, h / 2 )
         West
     )
@@ -52,6 +54,12 @@ init : ( Model, Cmd Msg )
 init =
     ( { bikes = initBikes
       , status = NewGame
+      , explosions =
+            [ { center = vec2 (w / 2) (h / 7)
+              , size = 40
+              , startTime = 0
+              }
+            ]
       }
     , Cmd.none
     )
@@ -127,7 +135,7 @@ pureUpdate msg model =
 
 view : Model -> Html never
 view model =
-    div [ Html.Attributes.style [ ( "background-color", "#222" ) ] ]
+    div [ Html.Attributes.style [ ( "background-color", colors.grey ) ] ]
         [ svg
             [ viewBox ([ 0, 0, w, h ] |> List.map toString |> String.join " ")
             , Html.Attributes.style
@@ -155,7 +163,7 @@ svgView model =
                         , y (toString (h / 2))
                         , fontSize "20"
                         , fontFamily "monospace"
-                        , fill "white"
+                        , fill colors.white
                         , transform "translate(-30, -10)"
                         ]
                         [ Svg.text "DEAD!" ]
@@ -168,7 +176,7 @@ svgView model =
                         , y (toString (h / 2))
                         , fontSize "20"
                         , fontFamily "monospace"
-                        , fill "white"
+                        , fill colors.white
                         , transform "translate(-100, -10)"
                         ]
                         [ Svg.text "[SPACE], [⇦][⇨]" ]
@@ -180,9 +188,10 @@ svgView model =
         ( one, two ) =
             model.bikes
     in
-        [ rect [ width (toString w), height (toString h), stroke "gray", strokeWidth (toString bikeSize), fill "#0009a9" ] []
-        , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill "white" ] [ Svg.text "Bike Wars" ]
+        [ rect [ width (toString w), height (toString h), stroke colors.grey, strokeWidth (toString bikeSize), fill colors.blue ] []
+        , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill colors.white ] [ Svg.text "Bike Wars" ]
         ]
             ++ Bike.view one
             ++ Bike.view two
+            ++ Explosion.view model.explosions
             ++ overlay
