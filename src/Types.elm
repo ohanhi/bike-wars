@@ -34,5 +34,5 @@ type alias Bike =
 type alias Explosion =
     { center : Vec2
     , size : Float
-    , startTime : Float
+    , ticksLeft : Int
     }

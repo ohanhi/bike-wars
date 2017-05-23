@@ -24,6 +24,11 @@ h =
     300
 
 
+ticksPerSecond : Int
+ticksPerSecond =
+    60
+
+
 gameBounds : List Line
 gameBounds =
     [ Horizontal ( vec2 0 0, vec2 w 0 )

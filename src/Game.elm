@@ -50,16 +50,24 @@ initBikes =
     )
 
 
+initExplosions : List Explosion
+initExplosions =
+    [ { center = vec2 (w / 2) (h / 7)
+      , size = 40
+      , ticksLeft = 5 * ticksPerSecond
+      }
+    , { center = vec2 40 40
+      , size = 20
+      , ticksLeft = 2 * ticksPerSecond
+      }
+    ]
+
+
 init : ( Model, Cmd Msg )
 init =
     ( { bikes = initBikes
       , status = NewGame
-      , explosions =
-            [ { center = vec2 (w / 2) (h / 7)
-              , size = 40
-              , startTime = 0
-              }
-            ]
+      , explosions = initExplosions
       }
     , Cmd.none
     )
@@ -87,11 +95,14 @@ pureUpdate msg model =
     case msg of
         TimeDiff diff ->
             let
+                explosions =
+                    Explosion.update model.explosions
+
                 ( oldOne, oldTwo ) =
                     model.bikes
 
                 compoundTrail =
-                    oldOne.trail ++ oldTwo.trail
+                    oldOne.trail ++ oldTwo.trail ++ Explosion.toTrail explosions
 
                 (( one, two ) as newBikes) =
                     ( Bike.move diff (Bike.frontWall oldTwo :: compoundTrail) oldOne
@@ -110,6 +121,7 @@ pureUpdate msg model =
                 { model
                     | bikes = newBikes
                     , status = status
+                    , explosions = explosions
                 }
 
         KeyDown key ->
