@@ -1,16 +1,16 @@
 module Game exposing (..)
 
-import Html exposing (..)
-import Html.Attributes exposing (style)
-import Svg exposing (..)
-import Svg.Attributes exposing (..)
 import AnimationFrame
-import Math.Vector2 exposing (vec2)
-import Keyboard.Extra exposing (Key(..))
 import Bike
-import Explosion
 import Constants exposing (..)
 import Direction exposing (..)
+import Explosion
+import Html exposing (..)
+import Html.Attributes exposing (style)
+import Keyboard.Extra exposing (Key(..))
+import Math.Vector2 exposing (vec2)
+import Svg exposing (..)
+import Svg.Attributes exposing (..)
 import Types exposing (..)
 
 
@@ -82,7 +82,7 @@ subscriptions model =
             else
                 []
     in
-        Sub.batch ([ Keyboard.Extra.downs KeyDown ] ++ ticks)
+    Sub.batch ([ Keyboard.Extra.downs KeyDown ] ++ ticks)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -102,7 +102,9 @@ pureUpdate msg model =
                     model.bikes
 
                 compoundTrail =
-                    oldOne.trail ++ oldTwo.trail ++ Explosion.toTrail explosions
+                    Bike.cons oldOne.position oldOne.trail
+                        ++ Bike.cons oldTwo.position oldTwo.trail
+                        ++ Explosion.toTrail explosions
 
                 (( one, two ) as newBikes) =
                     ( Bike.move diff (Bike.frontWall oldTwo :: compoundTrail) oldOne
@@ -118,11 +120,11 @@ pureUpdate msg model =
                     else
                         Running
             in
-                { model
-                    | bikes = newBikes
-                    , status = status
-                    , explosions = explosions
-                }
+            { model
+                | bikes = newBikes
+                , status = status
+                , explosions = explosions
+            }
 
         KeyDown key ->
             case model.status of
@@ -131,9 +133,9 @@ pureUpdate msg model =
                         ( one, two ) =
                             model.bikes
                     in
-                        { model
-                            | bikes = ( Bike.turn key one, Bike.turn key two )
-                        }
+                    { model
+                        | bikes = ( Bike.turn key one, Bike.turn key two )
+                    }
 
                 _ ->
                     if key == Space then
@@ -200,10 +202,10 @@ svgView model =
         ( one, two ) =
             model.bikes
     in
-        [ rect [ width (toString w), height (toString h), stroke colors.grey, strokeWidth (toString bikeSize), fill colors.blue ] []
-        , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill colors.white ] [ Svg.text "Bike Wars" ]
-        ]
-            ++ Bike.view one
-            ++ Bike.view two
-            ++ Explosion.view model.explosions
-            ++ overlay
+    [ rect [ width (toString w), height (toString h), stroke colors.grey, strokeWidth (toString bikeSize), fill colors.blue ] []
+    , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill colors.white ] [ Svg.text "Bike Wars" ]
+    ]
+        ++ Bike.view one
+        ++ Bike.view two
+        ++ Explosion.view model.explosions
+        ++ overlay

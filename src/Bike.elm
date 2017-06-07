@@ -1,13 +1,13 @@
 module Bike exposing (..)
 
+import BikePhysics exposing (..)
+import Constants exposing (bikeSize, speedC)
+import Direction exposing (..)
 import Keyboard.Extra
+import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Math.Vector2 as Vec2 exposing (Vec2, vec2, getX, getY)
 import Types exposing (..)
-import Direction exposing (..)
-import BikePhysics exposing (..)
-import Constants exposing (bikeSize)
 
 
 initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
@@ -34,29 +34,36 @@ frontWall bike =
             , vec2 (getX bike.position + bikeSize) (getY bike.position)
             ]
     in
-        case bike.direction of
-            North ->
-                horizontal
+    case bike.direction of
+        North ->
+            horizontal
 
-            East ->
-                vertical
+        East ->
+            vertical
 
-            South ->
-                horizontal
+        South ->
+            horizontal
 
-            West ->
-                vertical
+        West ->
+            vertical
 
 
 move : Float -> Trail -> Bike -> Bike
 move diff trail bike =
+    let
+        distance =
+            speedC * diff
+
+        collided =
+            isCollision distance bike.direction bike.position trail
+    in
     { bike
         | position =
-            if bike.collided then
+            if collided then
                 bike.position
             else
                 computePosition bike.direction bike.position diff
-        , collided = isCollision bike.direction bike.position trail
+        , collided = collided
     }
 
 
@@ -107,13 +114,13 @@ view bike =
                 ]
 
         trailPoints =
-            (cons bike.position bike.trail)
+            cons bike.position bike.trail
                 |> List.concatMap (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec)))
                 |> String.join " "
     in
-        [ polyline [ fill "none", stroke bike.color, strokeWidth (toString (bikeSize / 2)), points trailPoints ] []
-        , g [ transform (transformValue) ] [ bikeForm bikeSize bike.color ]
-        ]
+    [ polyline [ fill "none", stroke bike.color, strokeWidth (toString (bikeSize / 2)), points trailPoints ] []
+    , g [ transform transformValue ] [ bikeForm bikeSize bike.color ]
+    ]
 
 
 bikeForm : Float -> String -> Svg msg

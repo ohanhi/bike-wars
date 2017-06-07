@@ -1,7 +1,7 @@
 module Main exposing (..)
 
-import Html
 import Game exposing (..)
+import Html
 
 
 main : Program Never Model Msg

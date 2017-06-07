@@ -1,8 +1,8 @@
 module Types exposing (..)
 
-import Math.Vector2 exposing (Vec2)
 import Direction exposing (Direction)
 import Keyboard.Extra exposing (Key)
+import Math.Vector2 exposing (Vec2)
 
 
 type Line

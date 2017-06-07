@@ -1,10 +1,10 @@
 module Explosion exposing (..)
 
+import Constants exposing (..)
+import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Math.Vector2 as Vec2 exposing (Vec2, vec2, getX, getY)
 import Types exposing (Explosion, Trail)
-import Constants exposing (..)
 
 
 toTrail : List Explosion -> Trail
@@ -22,15 +22,15 @@ toTrail explosionList =
         bottom a =
             getY a.center + a.size / 2
     in
-        List.map
-            (\a ->
-                [ vec2 (left a) (top a)
-                , vec2 (right a) (top a)
-                , vec2 (right a) (bottom a)
-                , vec2 (left a) (bottom a)
-                ]
-            )
-            explosionList
+    List.map
+        (\a ->
+            [ vec2 (left a) (top a)
+            , vec2 (right a) (top a)
+            , vec2 (right a) (bottom a)
+            , vec2 (left a) (bottom a)
+            ]
+        )
+        explosionList
 
 
 view : List Explosion -> List (Svg msg)
@@ -52,15 +52,15 @@ explosionForm : Explosion -> Svg msg
 explosionForm { size, ticksLeft, center } =
     let
         strokeW =
-            (toFloat (ticksLeft % 10)) * 0.05 * size
+            toFloat (ticksLeft % 10) * 0.05 * size
     in
-        rect
-            [ strokeWidth (toString strokeW)
-            , stroke colors.red
-            , fill colors.yellow
-            , height (toString (size - strokeW))
-            , width (toString (size - strokeW))
-            , x (toString (getX center - size / 2 + strokeW / 2))
-            , y (toString (getY center - size / 2 + strokeW / 2))
-            ]
-            []
+    rect
+        [ strokeWidth (toString strokeW)
+        , stroke colors.red
+        , fill colors.yellow
+        , height (toString (size - strokeW))
+        , width (toString (size - strokeW))
+        , x (toString (getX center - size / 2 + strokeW / 2))
+        , y (toString (getY center - size / 2 + strokeW / 2))
+        ]
+        []
