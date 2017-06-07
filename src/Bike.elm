@@ -54,15 +54,22 @@ move diff trail bike =
         distance =
             speedC * diff
 
-        collided =
-            isCollision distance bike.direction bike.position trail
+        collisionPoint =
+            collision distance bike.direction bike.position trail
+
+        ( collided, position ) =
+            case ( bike.collided, collisionPoint ) of
+                ( False, Nothing ) ->
+                    ( False, computePosition bike.direction bike.position diff )
+
+                ( False, Just point ) ->
+                    ( True, point )
+
+                ( True, _ ) ->
+                    ( True, bike.position )
     in
     { bike
-        | position =
-            if collided then
-                bike.position
-            else
-                computePosition bike.direction bike.position diff
+        | position = position
         , collided = collided
     }
 

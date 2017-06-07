@@ -1,4 +1,4 @@
-module BikePhysics exposing (computeDirection, computePosition, isCollision)
+module BikePhysics exposing (collision, computeDirection, computePosition)
 
 {-| Doctest imports
 
@@ -116,35 +116,35 @@ reduceHorizontal posX line =
 
 Vertical line, moving horizontally
 
-    >>> isCollision 10.0 East (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    True
-    >>> isCollision 10.0 West (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    False
+    >>> collision 10.0 East (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    Just (vec2 1 0)
+    >>> collision 10.0 West (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    Nothing
 
 Horizontal line, moving vertically
 
-    >>> isCollision 10.0 South (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    True
-    >>> isCollision 10.0 North (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    False
+    >>> collision 10.0 South (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    Just (vec2 0 1)
+    >>> collision 10.0 North (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    Nothing
 
 Horizontal line, moving horizontally
 
-    >>> isCollision 10.0 East (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    True
-    >>> isCollision 10.0 West (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    True
+    >>> collision 10.0 East (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    Just (vec2 0 1)
+    >>> collision 10.0 West (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    Just (vec2 0 1)
 
 Vertical line, moving vertically
 
-    >>> isCollision 10.0 South (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    True
-    >>> isCollision 10.0 North (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    True
+    >>> collision 10.0 South (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    Just (vec2 1 0)
+    >>> collision 10.0 North (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    Just (vec2 1 0)
 
 -}
-isCollision : Float -> Direction -> Vec2 -> Trail -> Bool
-isCollision distance direction pos trail =
+collision : Float -> Direction -> Vec2 -> Trail -> Maybe Vec2
+collision distance direction pos trail =
     let
         ( posX, posY ) =
             Vec2.toTuple pos
@@ -159,24 +159,35 @@ isCollision distance direction pos trail =
             List.filterMap (reduceHorizontal posX) lines
 
         compareTo =
-            List.map (Vec2.distance pos) >> List.any lessThanEpsilon
+            List.filter (lessThanEpsilon << Vec2.distance pos)
+                >> List.head
 
         lessThanEpsilon x =
             x <= distance
+
+        maybeOr first second =
+            if first /= Nothing then
+                first
+            else
+                second
     in
     case direction of
         North ->
-            compareTo (List.filter (\v -> getY v <= posY) horizontals)
-                || compareTo verticals
+            maybeOr
+                (compareTo (List.filter (\v -> getY v <= posY) horizontals))
+                (compareTo verticals)
 
         South ->
-            compareTo (List.filter (\v -> getY v >= posY) horizontals)
-                || compareTo verticals
+            maybeOr
+                (compareTo (List.filter (\v -> getY v >= posY) horizontals))
+                (compareTo verticals)
 
         West ->
-            compareTo (List.filter (\v -> getX v <= posX) verticals)
-                || compareTo horizontals
+            maybeOr
+                (compareTo (List.filter (\v -> getX v <= posX) verticals))
+                (compareTo horizontals)
 
         East ->
-            compareTo (List.filter (\v -> getX v >= posX) verticals)
-                || compareTo horizontals
+            maybeOr
+                (compareTo (List.filter (\v -> getX v >= posX) verticals))
+                (compareTo horizontals)
