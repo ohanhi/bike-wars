@@ -116,31 +116,31 @@ reduceHorizontal posX line =
 
 Vertical line, moving horizontally
 
-> > > isCollision 10.0 East (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-> > > True
-> > > isCollision 10.0 West (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-> > > False
+    >>> isCollision 10.0 East (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    True
+    >>> isCollision 10.0 West (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    False
 
 Horizontal line, moving vertically
 
-> > > isCollision 10.0 South (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-> > > True
-> > > isCollision 10.0 North (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-> > > False
+    >>> isCollision 10.0 South (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    True
+    >>> isCollision 10.0 North (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    False
 
 Horizontal line, moving horizontally
 
-> > > isCollision 10.0 East (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-> > > True
-> > > isCollision 10.0 West (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-> > > True
+    >>> isCollision 10.0 East (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    True
+    >>> isCollision 10.0 West (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
+    True
 
 Vertical line, moving vertically
 
-> > > isCollision 10.0 South (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-> > > True
-> > > isCollision 10.0 North (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-> > > True
+    >>> isCollision 10.0 South (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    True
+    >>> isCollision 10.0 North (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
+    True
 
 -}
 isCollision : Float -> Direction -> Vec2 -> Trail -> Bool
