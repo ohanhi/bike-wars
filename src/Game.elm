@@ -14,10 +14,16 @@ import Svg.Attributes exposing (..)
 import Types exposing (..)
 
 
+type Player
+    = PlayerOne
+    | PlayerTwo
+
+
 type GameStatus
     = NewGame
     | Running
-    | GameOver
+    | GameWon Player
+    | Draw
 
 
 type alias Bikes =
@@ -111,12 +117,16 @@ pureUpdate msg model =
                     , Bike.move diff (Bike.frontWall oldOne :: compoundTrail) oldTwo
                     )
 
-                anyCollided =
-                    one.collided || two.collided
+                allCollided =
+                    one.collided && two.collided
 
                 status =
-                    if anyCollided then
-                        GameOver
+                    if allCollided then
+                        Draw
+                    else if one.collided then
+                        GameWon PlayerTwo
+                    else if two.collided then
+                        GameWon PlayerOne
                     else
                         Running
             in
@@ -168,33 +178,32 @@ svgView model =
         translucentRect =
             rect [ width (toString w), height (toString h), fill "rgba(0,0,0,0.5)" ] []
 
+        makeOverlay string xOffset =
+            [ translucentRect
+            , text_
+                [ x (toString (w / 2))
+                , y (toString (h / 2))
+                , fontSize "20"
+                , fontFamily "monospace"
+                , fill colors.white
+                , transform ("translate(" ++ toString xOffset ++ ", -10)")
+                ]
+                [ Svg.text string ]
+            ]
+
         overlay =
             case model.status of
-                GameOver ->
-                    [ translucentRect
-                    , text_
-                        [ x (toString (w / 2))
-                        , y (toString (h / 2))
-                        , fontSize "20"
-                        , fontFamily "monospace"
-                        , fill colors.white
-                        , transform "translate(-30, -10)"
-                        ]
-                        [ Svg.text "DEAD!" ]
-                    ]
+                GameWon PlayerOne ->
+                    makeOverlay "Red wins!" -50
+
+                GameWon PlayerTwo ->
+                    makeOverlay "Green wins!" -70
+
+                Draw ->
+                    makeOverlay "It's a draw." -70
 
                 NewGame ->
-                    [ translucentRect
-                    , text_
-                        [ x (toString (w / 2))
-                        , y (toString (h / 2))
-                        , fontSize "20"
-                        , fontFamily "monospace"
-                        , fill colors.white
-                        , transform "translate(-100, -10)"
-                        ]
-                        [ Svg.text "[SPACE], [⇦][⇨]" ]
-                    ]
+                    makeOverlay "[SPACE], [⇦][⇨]" -90
 
                 _ ->
                     []
