@@ -3,6 +3,7 @@ module Bike exposing (..)
 import BikePhysics exposing (..)
 import Constants exposing (bikeSize, speedC)
 import Direction exposing (..)
+import Explosion
 import Keyboard.Extra
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Svg exposing (..)
@@ -48,7 +49,7 @@ frontWall bike =
             vertical
 
 
-move : Float -> Trail -> Bike -> Bike
+move : Float -> Trail -> Bike -> ( Bike, Maybe Explosion )
 move diff trail bike =
     let
         distance =
@@ -57,21 +58,26 @@ move diff trail bike =
         collisionPoint =
             collision distance bike.direction bike.position trail
 
-        ( collided, position ) =
+        ( collided, position, explosionPoint ) =
             case ( bike.collided, collisionPoint ) of
                 ( False, Nothing ) ->
-                    ( False, computePosition bike.direction bike.position diff )
+                    ( False
+                    , computePosition bike.direction bike.position diff
+                    , Nothing
+                    )
 
                 ( False, Just point ) ->
-                    ( True, point )
+                    ( True, point, Just point )
 
                 ( True, _ ) ->
-                    ( True, bike.position )
+                    ( True, bike.position, Nothing )
     in
-    { bike
+    ( { bike
         | position = position
         , collided = collided
-    }
+      }
+    , Maybe.map Explosion.forBike explosionPoint
+    )
 
 
 turn : Keyboard.Extra.Key -> Bike -> Bike

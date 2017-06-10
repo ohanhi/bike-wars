@@ -8,7 +8,6 @@ import Explosion
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Keyboard.Extra exposing (Key(..))
-import Math.Vector2 exposing (vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Types exposing (..)
@@ -19,11 +18,15 @@ type Player
     | PlayerTwo
 
 
+type EndState
+    = GameWon Player
+    | Draw
+
+
 type GameStatus
     = NewGame
     | Running
-    | GameWon Player
-    | Draw
+    | GameOver EndState
 
 
 type alias Bikes =
@@ -56,25 +59,17 @@ initBikes =
     )
 
 
-initExplosions : List Explosion
-initExplosions =
-    [ { center = vec2 (w / 2) (h / 7)
-      , size = 40
-      , ticksLeft = 5 * ticksPerSecond
-      }
-    , { center = vec2 40 40
-      , size = 20
-      , ticksLeft = 2 * ticksPerSecond
-      }
-    ]
+initModel : Model
+initModel =
+    { bikes = initBikes
+    , status = NewGame
+    , explosions = []
+    }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { bikes = initBikes
-      , status = NewGame
-      , explosions = initExplosions
-      }
+    ( initModel
     , Cmd.none
     )
 
@@ -82,8 +77,19 @@ init =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     let
+        needsToAnimate =
+            case ( model.status, model.explosions == [] ) of
+                ( Running, _ ) ->
+                    True
+
+                ( GameOver _, False ) ->
+                    True
+
+                _ ->
+                    False
+
         ticks =
-            if model.status == Running then
+            if needsToAnimate then
                 [ AnimationFrame.diffs TimeDiff ]
             else
                 []
@@ -101,37 +107,45 @@ pureUpdate msg model =
     case msg of
         TimeDiff diff ->
             let
-                explosions =
-                    Explosion.update model.explosions
-
                 ( oldOne, oldTwo ) =
                     model.bikes
 
                 compoundTrail =
                     Bike.cons oldOne.position oldOne.trail
                         ++ Bike.cons oldTwo.position oldTwo.trail
-                        ++ Explosion.toTrail explosions
+                        ++ Explosion.toTrail model.explosions
 
-                (( one, two ) as newBikes) =
+                ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
                     ( Bike.move diff (Bike.frontWall oldTwo :: compoundTrail) oldOne
                     , Bike.move diff (Bike.frontWall oldOne :: compoundTrail) oldTwo
                     )
 
+                explosions =
+                    model.explosions
+                        |> Explosion.update
+                        |> List.append (List.filterMap identity [ expOne, expTwo ])
+
                 allCollided =
-                    one.collided && two.collided
+                    nextOne.collided && nextTwo.collided
 
                 status =
                     if allCollided then
-                        Draw
-                    else if one.collided then
-                        GameWon PlayerTwo
-                    else if two.collided then
-                        GameWon PlayerOne
+                        GameOver Draw
+                    else if nextOne.collided then
+                        GameOver (GameWon PlayerTwo)
+                    else if nextTwo.collided then
+                        GameOver (GameWon PlayerOne)
                     else
                         Running
+
+                ( one, two ) =
+                    if model.status == Running then
+                        ( nextOne, nextTwo )
+                    else
+                        ( oldOne, oldTwo )
             in
             { model
-                | bikes = newBikes
+                | bikes = ( one, two )
                 , status = status
                 , explosions = explosions
             }
@@ -149,10 +163,7 @@ pureUpdate msg model =
 
                 _ ->
                     if key == Space then
-                        { model
-                            | bikes = initBikes
-                            , status = Running
-                        }
+                        { initModel | status = Running }
                     else
                         model
 
@@ -191,8 +202,8 @@ svgView model =
                 [ Svg.text string ]
             ]
 
-        overlay =
-            case model.status of
+        endOverlay state =
+            case state of
                 GameWon PlayerOne ->
                     makeOverlay "Red wins!" -50
 
@@ -202,11 +213,16 @@ svgView model =
                 Draw ->
                     makeOverlay "It's a draw." -70
 
+        overlay status =
+            case status of
+                Running ->
+                    []
+
                 NewGame ->
                     makeOverlay "[SPACE], [⇦][⇨]" -90
 
-                _ ->
-                    []
+                GameOver endState ->
+                    endOverlay endState
 
         ( one, two ) =
             model.bikes
@@ -217,4 +233,4 @@ svgView model =
         ++ Bike.view one
         ++ Bike.view two
         ++ Explosion.view model.explosions
-        ++ overlay
+        ++ overlay model.status

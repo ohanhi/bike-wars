@@ -7,6 +7,11 @@ import Svg.Attributes exposing (..)
 import Types exposing (Explosion, Trail)
 
 
+forBike : Vec2 -> Explosion
+forBike center =
+    { center = center, size = 30.0, ticksLeft = 30 }
+
+
 toTrail : List Explosion -> Trail
 toTrail explosionList =
     let
