@@ -1,12 +1,17 @@
 module Constants exposing (..)
 
 import Math.Vector2 exposing (vec2)
-import Types exposing (Line(..))
+import Types exposing (Trail)
 
 
 bikeSize : Float
 bikeSize =
     4
+
+
+trailWidth : Float
+trailWidth =
+    3
 
 
 speedC : Float
@@ -29,12 +34,14 @@ ticksPerSecond =
     60
 
 
-gameBounds : List Line
+gameBounds : Trail
 gameBounds =
-    [ Horizontal ( vec2 0 0, vec2 w 0 )
-    , Horizontal ( vec2 0 h, vec2 w h )
-    , Vertical ( vec2 0 0, vec2 0 h )
-    , Vertical ( vec2 w 0, vec2 w h )
+    [ [ vec2 0 0
+      , vec2 w 0
+      , vec2 w h
+      , vec2 0 h
+      , vec2 0 0
+      ]
     ]
 
 

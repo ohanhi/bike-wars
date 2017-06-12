@@ -86,108 +86,117 @@ orderedTuple a b =
         Horizontal ( b, a )
 
 
-reduceVertical : Float -> Line -> Maybe Vec2
-reduceVertical posY line =
+{-| This function should find any sort of collision with the current walls.
+
+Vertical line, moving horizontally
+
+    >>> collision
+    ... { position = vec2 0 0, nextPosition = vec2 -10 0 }
+    ... [[ vec2 1 -10, vec2 1 10 ]] -- West
+    Nothing
+    >>> collision
+    ... { position = vec2 0 0, nextPosition = vec2 10 0 }
+    ... [[ vec2 1 -10, vec2 1 10 ]] -- East
+    Just (vec2 1 0)
+    >>> collision
+    ... { position = vec2 10 0, nextPosition = vec2 0 0 }
+    ... [[ vec2 1 -10, vec2 1 10 ]] -- West
+    Just (vec2 1 0)
+    >>> collision
+    ... { position = vec2 0 0, nextPosition = vec2 5 0 }
+    ... [[ vec2 10 -10, vec2 10 10 ]] -- East
+    Nothing
+
+Horizontal line, moving vertically
+
+    >>> collision
+    ... { position = vec2 0 0, nextPosition = vec2 0 10 }
+    ... [[ vec2 -10 1, vec2 10 1 ]]
+    Just (vec2 0 1)
+    >>> collision
+    ... { position = vec2 0 0, nextPosition = vec2 0 -10 }
+    ... [[ vec2 -10 1, vec2 10 1 ]]
+    Nothing
+
+Horizontal line, moving horizontally
+
+    >>> collision
+    ... { position = vec2 0 0, nextPosition = vec2 10 0 }
+    ... [[ vec2 -10 1, vec2 10 1 ]]
+    Nothing
+
+Vertical line, moving vertically
+
+    >>> collision
+    ... { position = vec2 0 0, nextPosition = vec2 0 10 }
+    ... [[ vec2 1 -10, vec2 1 10 ]] -- North
+    Nothing
+
+-}
+collision : { position : Vec2, nextPosition : Vec2 } -> Trail -> Maybe Vec2
+collision { position, nextPosition } trail =
+    let
+        lines =
+            trailToLines trail
+
+        moveLine =
+            orderedTuple position nextPosition
+    in
+    case moveLine of
+        Horizontal points ->
+            lines
+                |> List.filterMap onlyVertical
+                |> tryCollision (horizontalOrthogonal points)
+
+        Vertical points ->
+            lines
+                |> List.filterMap onlyHorizontal
+                |> tryCollision (verticalOrthogonal points)
+
+
+tryCollision : (( Vec2, Vec2 ) -> Maybe Vec2) -> List ( Vec2, Vec2 ) -> Maybe Vec2
+tryCollision method linePoints =
+    linePoints
+        |> List.filterMap method
+        |> List.head
+
+
+horizontalOrthogonal : ( Vec2, Vec2 ) -> ( Vec2, Vec2 ) -> Maybe Vec2
+horizontalOrthogonal ( a, b ) ( trailA, trailB ) =
+    if isBetweenWith getX a b trailA && isBetweenWith getY trailA trailB a then
+        Just (vec2 (getX trailA) (getY a))
+    else
+        Nothing
+
+
+verticalOrthogonal : ( Vec2, Vec2 ) -> ( Vec2, Vec2 ) -> Maybe Vec2
+verticalOrthogonal ( a, b ) ( trailA, trailB ) =
+    if isBetweenWith getY a b trailA && isBetweenWith getX trailA trailB a then
+        Just (vec2 (getX a) (getY trailA))
+    else
+        Nothing
+
+
+isBetweenWith : (Vec2 -> Float) -> Vec2 -> Vec2 -> Vec2 -> Bool
+isBetweenWith getN small large trailEnd =
+    getN small <= getN trailEnd && getN large >= getN trailEnd
+
+
+onlyVertical : Line -> Maybe ( Vec2, Vec2 )
+onlyVertical line =
     case line of
-        Vertical ( a, b ) ->
-            if (getY a < posY) && (getY b > posY) then
-                Just (vec2 (getX a) posY)
-            else
-                Nothing
+        Vertical points ->
+            Just points
 
         Horizontal _ ->
             Nothing
 
 
-reduceHorizontal : Float -> Line -> Maybe Vec2
-reduceHorizontal posX line =
+onlyHorizontal : Line -> Maybe ( Vec2, Vec2 )
+onlyHorizontal line =
     case line of
-        Horizontal ( a, b ) ->
-            if (getX a < posX) && (getX b > posX) then
-                Just (vec2 posX (getY a))
-            else
-                Nothing
+        Horizontal points ->
+            Just points
 
         Vertical _ ->
             Nothing
-
-
-{-| This function should find any sort of collision with the current walls.
-
-Vertical line, moving horizontally
-
-    >>> collision 10.0 East (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    Just (vec2 1 0)
-    >>> collision 10.0 West (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    Nothing
-
-Horizontal line, moving vertically
-
-    >>> collision 10.0 South (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    Just (vec2 0 1)
-    >>> collision 10.0 North (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    Nothing
-
-Horizontal line, moving horizontally
-
-    >>> collision 10.0 East (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    Just (vec2 0 1)
-    >>> collision 10.0 West (vec2 0 0) [[ vec2 -10 1, vec2 10 1 ]]
-    Just (vec2 0 1)
-
-Vertical line, moving vertically
-
-    >>> collision 10.0 South (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    Just (vec2 1 0)
-    >>> collision 10.0 North (vec2 0 0) [[ vec2 1 -10, vec2 1 10 ]]
-    Just (vec2 1 0)
-
--}
-collision : Float -> Direction -> Vec2 -> Trail -> Maybe Vec2
-collision distance direction pos trail =
-    let
-        ( posX, posY ) =
-            Vec2.toTuple pos
-
-        lines =
-            gameBounds ++ trailToLines trail
-
-        verticals =
-            List.filterMap (reduceVertical posY) lines
-
-        horizontals =
-            List.filterMap (reduceHorizontal posX) lines
-
-        compareTo =
-            List.filter (lessThanEpsilon << Vec2.distance pos)
-                >> List.head
-
-        lessThanEpsilon x =
-            x <= distance
-
-        maybeOr first second =
-            if first /= Nothing then
-                first
-            else
-                second
-    in
-    case direction of
-        North ->
-            maybeOr
-                (compareTo (List.filter (\v -> getY v <= posY) horizontals))
-                (compareTo verticals)
-
-        South ->
-            maybeOr
-                (compareTo (List.filter (\v -> getY v >= posY) horizontals))
-                (compareTo verticals)
-
-        West ->
-            maybeOr
-                (compareTo (List.filter (\v -> getX v <= posX) verticals))
-                (compareTo horizontals)
-
-        East ->
-            maybeOr
-                (compareTo (List.filter (\v -> getX v >= posX) verticals))
-                (compareTo horizontals)

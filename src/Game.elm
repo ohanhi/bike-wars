@@ -110,14 +110,24 @@ pureUpdate msg model =
                 ( oldOne, oldTwo ) =
                     model.bikes
 
-                compoundTrail =
-                    Bike.cons oldOne.position oldOne.trail
+                trailForOne =
+                    Bike.frontWall oldTwo
+                        :: Bike.omitLastSections oldOne.trail
                         ++ Bike.cons oldTwo.position oldTwo.trail
                         ++ Explosion.toTrail model.explosions
+                        ++ gameBounds
+
+                trailForTwo =
+                    Bike.frontWall oldOne
+                        -- omit the last portion of own trail
+                        :: Bike.omitLastSections oldTwo.trail
+                        ++ Bike.cons oldOne.position oldOne.trail
+                        ++ Explosion.toTrail model.explosions
+                        ++ gameBounds
 
                 ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
-                    ( Bike.move diff (Bike.frontWall oldTwo :: compoundTrail) oldOne
-                    , Bike.move diff (Bike.frontWall oldOne :: compoundTrail) oldTwo
+                    ( Bike.move diff trailForOne oldOne
+                    , Bike.move diff trailForTwo oldTwo
                     )
 
                 explosions =

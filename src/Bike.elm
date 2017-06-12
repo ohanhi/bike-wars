@@ -55,16 +55,16 @@ move diff trail bike =
         distance =
             speedC * diff
 
+        nextPosition =
+            computePosition bike.direction bike.position diff
+
         collisionPoint =
-            collision distance bike.direction bike.position trail
+            collision { position = bike.position, nextPosition = nextPosition } trail
 
         ( collided, position, explosionPoint ) =
             case ( bike.collided, collisionPoint ) of
                 ( False, Nothing ) ->
-                    ( False
-                    , computePosition bike.direction bike.position diff
-                    , Nothing
-                    )
+                    ( False, nextPosition, Nothing )
 
                 ( False, Just point ) ->
                     ( True, point, Just point )
@@ -82,10 +82,13 @@ move diff trail bike =
 
 turn : Keyboard.Extra.Key -> Bike -> Bike
 turn key bike =
-    { bike
-        | direction = computeDirection bike.controls bike.direction key
-        , trail = cons bike.position bike.trail
-    }
+    if bike.controls.left == key || bike.controls.right == key then
+        { bike
+            | direction = computeDirection bike.controls bike.direction key
+            , trail = cons bike.position bike.trail
+        }
+    else
+        bike
 
 
 view : Bike -> List (Svg msg)
@@ -162,3 +165,13 @@ cons point trail =
 
         first :: rest ->
             (point :: first) :: rest
+
+
+omitLastSections : Trail -> Trail
+omitLastSections trail =
+    case trail of
+        first :: rest ->
+            List.drop 1 first :: rest
+
+        other ->
+            other
