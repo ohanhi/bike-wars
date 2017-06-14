@@ -114,15 +114,12 @@ pureUpdate msg model =
                     Bike.frontWall oldTwo
                         :: Bike.omitLastSections oldOne.trail
                         ++ Bike.cons oldTwo.position oldTwo.trail
-                        ++ Explosion.toTrail model.explosions
                         ++ gameBounds
 
                 trailForTwo =
                     Bike.frontWall oldOne
-                        -- omit the last portion of own trail
                         :: Bike.omitLastSections oldTwo.trail
                         ++ Bike.cons oldOne.position oldOne.trail
-                        ++ Explosion.toTrail model.explosions
                         ++ gameBounds
 
                 ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =

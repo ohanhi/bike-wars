@@ -12,32 +12,6 @@ forBike center =
     { center = center, size = 30.0, ticksLeft = 30 }
 
 
-toTrail : List Explosion -> Trail
-toTrail explosionList =
-    let
-        left a =
-            getX a.center - a.size / 2
-
-        right a =
-            getX a.center + a.size / 2
-
-        top a =
-            getY a.center - a.size / 2
-
-        bottom a =
-            getY a.center + a.size / 2
-    in
-    List.map
-        (\a ->
-            [ vec2 (left a) (top a)
-            , vec2 (right a) (top a)
-            , vec2 (right a) (bottom a)
-            , vec2 (left a) (bottom a)
-            ]
-        )
-        explosionList
-
-
 view : List Explosion -> List (Svg msg)
 view =
     List.map explosionForm
