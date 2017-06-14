@@ -9,6 +9,7 @@ module BikePhysics exposing (collision, computeDirection, computePosition)
 
 import Constants exposing (..)
 import Direction exposing (..)
+import Helpers exposing (..)
 import Keyboard.Extra exposing (Key(..))
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Types exposing (..)
@@ -45,45 +46,6 @@ computeDirection controls direction key =
         turnRight direction
     else
         direction
-
-
-trailToLines : Trail -> List Line
-trailToLines =
-    let
-        recurse acc list =
-            case list of
-                [] ->
-                    acc
-
-                _ :: [] ->
-                    acc
-
-                a :: b :: tail ->
-                    recurse (orderedTuple a b :: acc) (b :: tail)
-    in
-    List.concatMap (recurse [])
-
-
-orderedTuple : Vec2 -> Vec2 -> Line
-orderedTuple a b =
-    let
-        (( aX, aY ) as tupleA) =
-            Vec2.toTuple a
-
-        (( bX, bY ) as tupleB) =
-            Vec2.toTuple b
-    in
-    if aX == bX then
-        -- vertical
-        if aY < bY then
-            Vertical ( a, b )
-        else
-            Vertical ( b, a )
-    else if aX < bX then
-        -- horizontal
-        Horizontal ( a, b )
-    else
-        Horizontal ( b, a )
 
 
 {-| This function should find any sort of collision with the current walls.
@@ -140,7 +102,7 @@ collision { position, nextPosition } trail =
             trailToLines trail
 
         moveLine =
-            orderedTuple position nextPosition
+            toLine position nextPosition
     in
     case moveLine of
         Horizontal points ->
@@ -152,51 +114,3 @@ collision { position, nextPosition } trail =
             lines
                 |> List.filterMap onlyHorizontal
                 |> tryCollision (verticalOrthogonal points)
-
-
-tryCollision : (( Vec2, Vec2 ) -> Maybe Vec2) -> List ( Vec2, Vec2 ) -> Maybe Vec2
-tryCollision method linePoints =
-    linePoints
-        |> List.filterMap method
-        |> List.head
-
-
-horizontalOrthogonal : ( Vec2, Vec2 ) -> ( Vec2, Vec2 ) -> Maybe Vec2
-horizontalOrthogonal ( a, b ) ( trailA, trailB ) =
-    if isBetweenWith getX a b trailA && isBetweenWith getY trailA trailB a then
-        Just (vec2 (getX trailA) (getY a))
-    else
-        Nothing
-
-
-verticalOrthogonal : ( Vec2, Vec2 ) -> ( Vec2, Vec2 ) -> Maybe Vec2
-verticalOrthogonal ( a, b ) ( trailA, trailB ) =
-    if isBetweenWith getY a b trailA && isBetweenWith getX trailA trailB a then
-        Just (vec2 (getX a) (getY trailA))
-    else
-        Nothing
-
-
-isBetweenWith : (Vec2 -> Float) -> Vec2 -> Vec2 -> Vec2 -> Bool
-isBetweenWith getN small large trailEnd =
-    getN small <= getN trailEnd && getN large >= getN trailEnd
-
-
-onlyVertical : Line -> Maybe ( Vec2, Vec2 )
-onlyVertical line =
-    case line of
-        Vertical points ->
-            Just points
-
-        Horizontal _ ->
-            Nothing
-
-
-onlyHorizontal : Line -> Maybe ( Vec2, Vec2 )
-onlyHorizontal line =
-    case line of
-        Horizontal points ->
-            Just points
-
-        Vertical _ ->
-            Nothing

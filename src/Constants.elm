@@ -9,9 +9,9 @@ bikeSize =
     4
 
 
-trailWidth : Float
-trailWidth =
-    3
+trailSize : Float
+trailSize =
+    1.0
 
 
 speedC : Float
