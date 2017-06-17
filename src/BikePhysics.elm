@@ -2,8 +2,8 @@ module BikePhysics exposing (collision, computeDirection, computePosition)
 
 {-| Doctest imports
 
-    >>> import Math.Vector2 exposing (vec2)
-    >>> import Direction exposing (..)
+    import Math.Vector2 exposing (vec2)
+    import Direction exposing (..)
 
 -}
 
@@ -49,51 +49,6 @@ computeDirection controls direction key =
 
 
 {-| This function should find any sort of collision with the current walls.
-
-Vertical line, moving horizontally
-
-    >>> collision
-    ... { position = vec2 0 0, nextPosition = vec2 -10 0 }
-    ... [[ vec2 1 -10, vec2 1 10 ]] -- West
-    Nothing
-    >>> collision
-    ... { position = vec2 0 0, nextPosition = vec2 10 0 }
-    ... [[ vec2 1 -10, vec2 1 10 ]] -- East
-    Just (vec2 1 0)
-    >>> collision
-    ... { position = vec2 10 0, nextPosition = vec2 0 0 }
-    ... [[ vec2 1 -10, vec2 1 10 ]] -- West
-    Just (vec2 1 0)
-    >>> collision
-    ... { position = vec2 0 0, nextPosition = vec2 5 0 }
-    ... [[ vec2 10 -10, vec2 10 10 ]] -- East
-    Nothing
-
-Horizontal line, moving vertically
-
-    >>> collision
-    ... { position = vec2 0 0, nextPosition = vec2 0 10 }
-    ... [[ vec2 -10 1, vec2 10 1 ]]
-    Just (vec2 0 1)
-    >>> collision
-    ... { position = vec2 0 0, nextPosition = vec2 0 -10 }
-    ... [[ vec2 -10 1, vec2 10 1 ]]
-    Nothing
-
-Horizontal line, moving horizontally
-
-    >>> collision
-    ... { position = vec2 0 0, nextPosition = vec2 10 0 }
-    ... [[ vec2 -10 1, vec2 10 1 ]]
-    Nothing
-
-Vertical line, moving vertically
-
-    >>> collision
-    ... { position = vec2 0 0, nextPosition = vec2 0 10 }
-    ... [[ vec2 1 -10, vec2 1 10 ]] -- North
-    Nothing
-
 -}
 collision : { position : Vec2, nextPosition : Vec2 } -> Trail -> Maybe Vec2
 collision { position, nextPosition } trail =
@@ -105,12 +60,15 @@ collision { position, nextPosition } trail =
             toLine position nextPosition
     in
     case moveLine of
-        Horizontal points ->
+        Just (Horizontal points) ->
             lines
                 |> List.filterMap onlyVertical
                 |> tryCollision (horizontalOrthogonal points)
 
-        Vertical points ->
+        Just (Vertical points) ->
             lines
                 |> List.filterMap onlyHorizontal
                 |> tryCollision (verticalOrthogonal points)
+
+        Nothing ->
+            Nothing

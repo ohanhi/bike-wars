@@ -163,20 +163,24 @@ pureUpdate msg model =
                                         trail
 
                                     Just explosion ->
-                                        trail
-                                            |> Helpers.trailToLines
-                                            |> Trail.breakLines explosion
-                                            |> Helpers.linesToTrail
+                                        Trail.break explosion trail
                            )
 
                 ( trailOne, trailTwo ) =
-                    ( breakIfNecessary one.trail, breakIfNecessary two.trail )
+                    ( Bike.cons one.position one.trail
+                        |> breakIfNecessary
+                        |> Bike.omitLastSections
+                    , Bike.cons two.position two.trail
+                        |> breakIfNecessary
+                        |> Bike.omitLastSections
+                    )
             in
             { model
-                | bikes =
-                    ( { one | trail = trailOne }
-                    , { two | trail = trailTwo }
-                    )
+                | bikes = ( one, two )
+
+                -- ( { one | trail = trailOne }
+                -- , { two | trail = trailTwo }
+                -- )
                 , status = status
                 , explosions = explosions
             }
