@@ -5,11 +5,13 @@ import Bike
 import Constants exposing (..)
 import Direction exposing (..)
 import Explosion
+import Helpers
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Keyboard.Extra exposing (Key(..))
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
+import Trail
 import Types exposing (..)
 
 
@@ -150,9 +152,31 @@ pureUpdate msg model =
                         ( nextOne, nextTwo )
                     else
                         ( oldOne, oldTwo )
+
+                breakIfNecessary trail =
+                    [ expOne, expTwo ]
+                        |> List.filterMap identity
+                        |> List.head
+                        |> (\exp ->
+                                case exp of
+                                    Nothing ->
+                                        trail
+
+                                    Just explosion ->
+                                        trail
+                                            |> Helpers.trailToLines
+                                            |> Trail.breakLines explosion
+                                            |> Helpers.linesToTrail
+                           )
+
+                ( trailOne, trailTwo ) =
+                    ( breakIfNecessary one.trail, breakIfNecessary two.trail )
             in
             { model
-                | bikes = ( one, two )
+                | bikes =
+                    ( { one | trail = trailOne }
+                    , { two | trail = trailTwo }
+                    )
                 , status = status
                 , explosions = explosions
             }
