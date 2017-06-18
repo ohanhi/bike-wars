@@ -5,7 +5,6 @@ import Bike
 import Constants exposing (..)
 import Direction exposing (..)
 import Explosion
-import Helpers
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Keyboard.Extra exposing (Key(..))
@@ -108,82 +107,7 @@ pureUpdate : Msg -> Model -> Model
 pureUpdate msg model =
     case msg of
         TimeDiff diff ->
-            let
-                ( oldOne, oldTwo ) =
-                    model.bikes
-
-                trailForOne =
-                    Bike.frontWall oldTwo
-                        :: Bike.omitLastSections oldOne.trail
-                        ++ Bike.cons oldTwo.position oldTwo.trail
-                        ++ gameBounds
-
-                trailForTwo =
-                    Bike.frontWall oldOne
-                        :: Bike.omitLastSections oldTwo.trail
-                        ++ Bike.cons oldOne.position oldOne.trail
-                        ++ gameBounds
-
-                ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
-                    ( Bike.move diff trailForOne oldOne
-                    , Bike.move diff trailForTwo oldTwo
-                    )
-
-                explosions =
-                    model.explosions
-                        |> Explosion.update
-                        |> List.append (List.filterMap identity [ expOne, expTwo ])
-
-                allCollided =
-                    nextOne.collided && nextTwo.collided
-
-                status =
-                    if allCollided then
-                        GameOver Draw
-                    else if nextOne.collided then
-                        GameOver (GameWon PlayerTwo)
-                    else if nextTwo.collided then
-                        GameOver (GameWon PlayerOne)
-                    else
-                        Running
-
-                ( one, two ) =
-                    if model.status == Running then
-                        ( nextOne, nextTwo )
-                    else
-                        ( oldOne, oldTwo )
-
-                breakIfNecessary trail =
-                    [ expOne, expTwo ]
-                        |> List.filterMap identity
-                        |> List.head
-                        |> (\exp ->
-                                case exp of
-                                    Nothing ->
-                                        trail
-
-                                    Just explosion ->
-                                        Trail.break explosion trail
-                           )
-
-                ( trailOne, trailTwo ) =
-                    ( Bike.cons one.position one.trail
-                        |> breakIfNecessary
-                        |> Bike.omitLastSections
-                    , Bike.cons two.position two.trail
-                        |> breakIfNecessary
-                        |> Bike.omitLastSections
-                    )
-            in
-            { model
-                | bikes = ( one, two )
-
-                -- ( { one | trail = trailOne }
-                -- , { two | trail = trailTwo }
-                -- )
-                , status = status
-                , explosions = explosions
-            }
+            stepGame model diff
 
         KeyDown key ->
             case model.status of
@@ -201,6 +125,63 @@ pureUpdate msg model =
                         { initModel | status = Running }
                     else
                         model
+
+
+stepGame : Model -> Float -> Model
+stepGame model diff =
+    let
+        ( oldOne, oldTwo ) =
+            model.bikes
+
+        ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
+            ( Bike.move diff { current = oldOne, other = oldTwo }
+            , Bike.move diff { current = oldTwo, other = oldOne }
+            )
+
+        explosions =
+            model.explosions
+                |> Explosion.update
+                |> List.append (List.filterMap identity [ expOne, expTwo ])
+
+        allCollided =
+            nextOne.collided && nextTwo.collided
+
+        status =
+            if model.status == Running then
+                if allCollided then
+                    GameOver Draw
+                else if nextOne.collided then
+                    GameOver (GameWon PlayerTwo)
+                else if nextTwo.collided then
+                    GameOver (GameWon PlayerOne)
+                else
+                    Running
+            else
+                model.status
+
+        ( one, two ) =
+            if model.status == Running then
+                ( nextOne, nextTwo )
+            else
+                ( oldOne, oldTwo )
+
+        ( trailOne, trailTwo ) =
+            ( Bike.cons one.position one.trail
+                |> Trail.breakIfNecessary [ expOne, expTwo ]
+                |> Bike.omitLastSections
+            , Bike.cons two.position two.trail
+                |> Trail.breakIfNecessary [ expOne, expTwo ]
+                |> Bike.omitLastSections
+            )
+    in
+    { model
+        | bikes =
+            ( { one | trail = trailOne }
+            , { two | trail = trailTwo }
+            )
+        , status = status
+        , explosions = explosions
+    }
 
 
 view : Model -> Html never

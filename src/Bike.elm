@@ -49,20 +49,23 @@ frontWall bike =
             vertical
 
 
-move : Float -> Trail -> Bike -> ( Bike, Maybe Explosion )
-move diff trail bike =
+move : Float -> { current : Bike, other : Bike } -> ( Bike, Maybe Explosion )
+move diff { current, other } =
     let
-        distance =
-            speedC * diff
+        trail =
+            frontWall other
+                :: omitLastSections current.trail
+                ++ cons other.position other.trail
+                ++ Constants.gameBounds
 
         nextPosition =
-            computePosition bike.direction bike.position diff
+            computePosition current.direction current.position diff
 
         collisionPoint =
-            collision { position = bike.position, nextPosition = nextPosition } trail
+            collision { position = current.position, nextPosition = nextPosition } trail
 
         ( collided, position, explosionPoint ) =
-            case ( bike.collided, collisionPoint ) of
+            case ( current.collided, collisionPoint ) of
                 ( False, Nothing ) ->
                     ( False, nextPosition, Nothing )
 
@@ -70,9 +73,9 @@ move diff trail bike =
                     ( True, point, Just point )
 
                 ( True, _ ) ->
-                    ( True, bike.position, Nothing )
+                    ( True, current.position, Nothing )
     in
-    ( { bike
+    ( { current
         | position = position
         , collided = collided
       }
@@ -129,14 +132,30 @@ view bike =
                 , ")"
                 ]
 
-        trailPoints =
-            cons bike.position bike.trail
-                |> List.concatMap (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec)))
-                |> String.join " "
+        trail =
+            bike.trail
+                |> cons bike.position
+                |> List.map
+                    (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec))
+                        >> String.join " "
+                        >> (\polylinePoints ->
+                                polyline
+                                    [ fill "none"
+                                    , stroke bike.color
+                                    , strokeWidth (toString (bikeSize / 2))
+                                    , points polylinePoints
+                                    ]
+                                    []
+                           )
+                    )
+
+        bikeView =
+            if bike.collided then
+                []
+            else
+                [ g [ transform transformValue ] [ bikeForm bikeSize bike.color ] ]
     in
-    [ polyline [ fill "none", stroke bike.color, strokeWidth (toString (bikeSize / 2)), points trailPoints ] []
-    , g [ transform transformValue ] [ bikeForm bikeSize bike.color ]
-    ]
+    trail ++ bikeView
 
 
 bikeForm : Float -> String -> Svg msg

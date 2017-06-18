@@ -9,7 +9,7 @@ import Test exposing (..)
 
 coord : Fuzzer Float
 coord =
-    floatRange 2000 2000
+    floatRange -1000 2000
 
 
 spec : Test

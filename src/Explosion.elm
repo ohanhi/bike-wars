@@ -9,7 +9,7 @@ import Types exposing (Explosion, Trail)
 
 forBike : Vec2 -> Explosion
 forBike center =
-    { center = center, size = 30.0, ticksLeft = 30 }
+    { center = center, size = 30.0, ticksLeft = 15 }
 
 
 view : List Explosion -> List (Svg msg)

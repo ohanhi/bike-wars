@@ -4,6 +4,7 @@ module Trail exposing (..)
 
     import Math.Vector2 exposing (vec2)
     import Types exposing (..)
+    import Helpers exposing (..)
 
 -}
 
@@ -12,12 +13,22 @@ import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, setX, setY, vec2)
 import Types exposing (..)
 
 
-break : Explosion -> Trail -> Trail
-break explosion trail =
-    trail
-        |> trailToLines
-        |> breakLines explosion
-        |> linesToTrail
+breakIfNecessary : List (Maybe Explosion) -> Trail -> Trail
+breakIfNecessary maybeExplosions trail =
+    maybeExplosions
+        |> List.filterMap identity
+        |> List.head
+        |> (\exp ->
+                case exp of
+                    Nothing ->
+                        trail
+
+                    Just explosion ->
+                        trail
+                            |> trailToLines
+                            |> breakLines explosion
+                            |> linesToTrail
+           )
 
 
 {-| Remove parts of the trail that are under the explosion.
@@ -98,6 +109,34 @@ More complex
     --> , Horizontal (vec2 -100 10, vec2 -50 10)
     --> ]
 
+    breakLines
+      { center = vec2 365 150, size = 30, ticksLeft = 3 }
+      (trailToLines [[ vec2 185 150, vec2 20 150 ]])
+    --> (trailToLines [[ vec2 185 150, vec2 20 150 ]])
+
+    breakLines
+        { center = vec2 324 150, size = 30, ticksLeft = 30 }
+        (trailToLines
+            [ [ vec2 324 149
+              , vec2 324 124
+              , vec2 278 124
+              , vec2 278 150
+              , vec2 380 150
+              ]
+            ]
+        )
+    --> trailToLines
+    -->     [ [ vec2 324 135
+    -->       , vec2 324 124
+    -->       , vec2 278 124
+    -->       , vec2 278 150
+    -->       , vec2 309 150
+    -->       ]
+    -->     , [ vec2 339 150
+    -->       , vec2 380 150
+    -->       ]
+    -->     ]
+
 -}
 breakLines : Explosion -> List Line -> List Line
 breakLines explosion lines =
@@ -161,18 +200,15 @@ horizontalPairs { n, w, s, e } (( start, end ) as points) =
 
             largeIsBetween =
                 isBetween ( w, e ) (getX large)
+
+            explosionIsBetween =
+                getX small < w && e < getX large
         in
-        case ( smallIsBetween, largeIsBetween ) of
-            ( True, True ) ->
-                []
+        case ( smallIsBetween, largeIsBetween, explosionIsBetween ) of
+            ( False, False, False ) ->
+                [ points ]
 
-            ( True, False ) ->
-                [ mapSmall (setX e) points ]
-
-            ( False, True ) ->
-                [ mapLarge (setX w) points ]
-
-            ( False, False ) ->
+            ( False, False, True ) ->
                 if smallIsStart then
                     [ ( small, vec2 w (getY small) )
                     , ( vec2 e (getY large), large )
@@ -181,6 +217,15 @@ horizontalPairs { n, w, s, e } (( start, end ) as points) =
                     [ ( vec2 e (getY large), large )
                     , ( small, vec2 w (getY small) )
                     ]
+
+            ( True, False, _ ) ->
+                [ mapSmall (setX e) points ]
+
+            ( False, True, _ ) ->
+                [ mapLarge (setX w) points ]
+
+            ( True, True, _ ) ->
+                []
     else
         [ points ]
 
@@ -216,18 +261,24 @@ verticalPairs { n, w, s, e } (( start, end ) as points) =
 
             largeIsBetween =
                 isBetween ( n, s ) (getY large)
+
+            explosionIsBetween =
+                getY small < n && s < getY large
         in
-        case ( smallIsBetween, largeIsBetween ) of
-            ( True, True ) ->
+        case ( smallIsBetween, largeIsBetween, explosionIsBetween ) of
+            ( False, False, False ) ->
+                [ points ]
+
+            ( True, True, _ ) ->
                 []
 
-            ( True, False ) ->
+            ( True, False, _ ) ->
                 [ mapSmall (setY s) points ]
 
-            ( False, True ) ->
+            ( False, True, _ ) ->
                 [ mapLarge (setY n) points ]
 
-            ( False, False ) ->
+            ( False, False, _ ) ->
                 if smallIsStart then
                     [ ( small, vec2 (getX small) n )
                     , ( vec2 (getX large) s, large )
@@ -237,4 +288,4 @@ verticalPairs { n, w, s, e } (( start, end ) as points) =
                     , ( small, vec2 (getX small) n )
                     ]
     else
-        [ ( small, large ) ]
+        [ points ]
