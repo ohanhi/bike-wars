@@ -10,7 +10,6 @@ import Html.Attributes exposing (style)
 import Keyboard.Extra exposing (Key(..))
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Trail
 import Types exposing (..)
 
 
@@ -133,14 +132,17 @@ stepGame model diff =
         ( oldOne, oldTwo ) =
             model.bikes
 
-        ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
-            ( Bike.move diff { current = oldOne, other = oldTwo }
-            , Bike.move diff { current = oldTwo, other = oldOne }
-            )
-
         explosions =
             model.explosions
                 |> Explosion.update
+
+        ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
+            ( Bike.update diff explosions { current = oldOne, other = oldTwo }
+            , Bike.update diff explosions { current = oldTwo, other = oldOne }
+            )
+
+        nextExplosions =
+            explosions
                 |> List.append (List.filterMap identity [ expOne, expTwo ])
 
         allCollided =
@@ -158,29 +160,11 @@ stepGame model diff =
                     Running
             else
                 model.status
-
-        ( one, two ) =
-            if model.status == Running then
-                ( nextOne, nextTwo )
-            else
-                ( oldOne, oldTwo )
-
-        ( trailOne, trailTwo ) =
-            ( Bike.cons one.position one.trail
-                |> Trail.breakIfNecessary [ expOne, expTwo ]
-                |> Bike.omitLastSections
-            , Bike.cons two.position two.trail
-                |> Trail.breakIfNecessary [ expOne, expTwo ]
-                |> Bike.omitLastSections
-            )
     in
     { model
-        | bikes =
-            ( { one | trail = trailOne }
-            , { two | trail = trailTwo }
-            )
+        | bikes = ( nextOne, nextTwo )
         , status = status
-        , explosions = explosions
+        , explosions = nextExplosions
     }
 
 

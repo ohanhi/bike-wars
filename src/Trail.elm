@@ -13,10 +13,9 @@ import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, setX, setY, vec2)
 import Types exposing (..)
 
 
-breakIfNecessary : List (Maybe Explosion) -> Trail -> Trail
-breakIfNecessary maybeExplosions trail =
-    maybeExplosions
-        |> List.filterMap identity
+breakIfNecessary : List Explosion -> Trail -> Trail
+breakIfNecessary explosions trail =
+    explosions
         |> List.head
         |> (\exp ->
                 case exp of

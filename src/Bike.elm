@@ -8,13 +8,14 @@ import Keyboard.Extra
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
+import Trail
 import Types exposing (..)
 
 
 initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
 initBike controls color ( x, y ) direction =
     { position = vec2 x y
-    , trail = [ [ vec2 x y ] ]
+    , trail = [ [ vec2 x y, vec2 x y ] ]
     , collided = False
     , direction = direction
     , color = color
@@ -49,20 +50,20 @@ frontWall bike =
             vertical
 
 
-move : Float -> { current : Bike, other : Bike } -> ( Bike, Maybe Explosion )
-move diff { current, other } =
+update : Float -> List Explosion -> { current : Bike, other : Bike } -> ( Bike, Maybe Explosion )
+update diff explosions { current, other } =
     let
-        trail =
+        walls =
             frontWall other
                 :: omitLastSections current.trail
-                ++ cons other.position other.trail
+                ++ other.trail
                 ++ Constants.gameBounds
 
         nextPosition =
             computePosition current.direction current.position diff
 
         collisionPoint =
-            collision { position = current.position, nextPosition = nextPosition } trail
+            collision { position = current.position, nextPosition = nextPosition } walls
 
         ( collided, position, explosionPoint ) =
             case ( current.collided, collisionPoint ) of
@@ -74,10 +75,20 @@ move diff { current, other } =
 
                 ( True, _ ) ->
                     ( True, current.position, Nothing )
+
+        trail =
+            if collided then
+                current.trail
+                    |> Trail.breakIfNecessary explosions
+            else
+                current.trail
+                    |> swapPosition current.position
+                    |> Trail.breakIfNecessary explosions
     in
     ( { current
         | position = position
         , collided = collided
+        , trail = trail
       }
     , Maybe.map Explosion.forBike explosionPoint
     )
@@ -88,7 +99,10 @@ turn key bike =
     if bike.controls.left == key || bike.controls.right == key then
         { bike
             | direction = computeDirection bike.controls bike.direction key
-            , trail = cons bike.position bike.trail
+            , trail =
+                bike.trail
+                    |> swapPosition bike.position
+                    |> cons bike.position
         }
     else
         bike
@@ -134,7 +148,6 @@ view bike =
 
         trail =
             bike.trail
-                |> cons bike.position
                 |> List.map
                     (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec))
                         >> String.join " "
@@ -186,11 +199,21 @@ cons point trail =
             (point :: first) :: rest
 
 
+swapPosition : Vec2 -> Trail -> Trail
+swapPosition point trail =
+    case trail of
+        (head :: tail) :: rest ->
+            (point :: tail) :: rest
+
+        _ ->
+            trail
+
+
 omitLastSections : Trail -> Trail
 omitLastSections trail =
     case trail of
         first :: rest ->
-            List.drop 1 first :: rest
+            List.drop 2 first :: rest
 
         other ->
             other
