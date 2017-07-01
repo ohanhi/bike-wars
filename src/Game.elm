@@ -50,11 +50,11 @@ initBikes =
     ( Bike.initBike
         { left = CharA, right = CharD, up = CharW }
         colors.red
-        ( 20, h / 2 )
+        ( 20, h / 5 * 2 )
         East
     , Bike.initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
         colors.green
-        ( w - 20, h / 2 )
+        ( w - 20, h / 5 * 3 )
         West
     )
 
@@ -149,17 +149,14 @@ stepGame model diff =
             nextOne.collided && nextTwo.collided
 
         status =
-            if model.status == Running then
-                if allCollided then
-                    GameOver Draw
-                else if nextOne.collided then
-                    GameOver (GameWon PlayerTwo)
-                else if nextTwo.collided then
-                    GameOver (GameWon PlayerOne)
-                else
-                    Running
+            if allCollided then
+                GameOver Draw
+            else if nextOne.collided then
+                GameOver (GameWon PlayerTwo)
+            else if nextTwo.collided then
+                GameOver (GameWon PlayerOne)
             else
-                model.status
+                Running
     in
     { model
         | bikes = ( nextOne, nextTwo )

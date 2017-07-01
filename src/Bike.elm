@@ -63,18 +63,24 @@ update diff explosions { current, other } =
             computePosition current.direction current.position diff
 
         collisionPoint =
-            collision { position = current.position, nextPosition = nextPosition } walls
+            collision
+                { position = current.position, nextPosition = nextPosition }
+                walls
+                (toObstacle other :: List.map Explosion.toObstacle explosions)
 
         ( collided, position, explosionPoint ) =
             case ( current.collided, collisionPoint ) of
-                ( False, Nothing ) ->
-                    ( False, nextPosition, Nothing )
-
                 ( False, Just point ) ->
+                    -- fresh collision
                     ( True, point, Just point )
 
                 ( True, _ ) ->
+                    -- old collision
                     ( True, current.position, Nothing )
+
+                ( False, Nothing ) ->
+                    -- all good
+                    ( False, nextPosition, Nothing )
 
         trail =
             if collided then
@@ -106,6 +112,22 @@ turn key bike =
         }
     else
         bike
+
+
+toObstacle : Bike -> Obstacle
+toObstacle bike =
+    let
+        ( cx, cy ) =
+            Vec2.toTuple bike.position
+
+        r =
+            bikeSize / 2
+    in
+    { w = cx - r
+    , e = cx + r
+    , n = cy - r
+    , s = cy + r
+    }
 
 
 view : Bike -> List (Svg msg)
@@ -156,6 +178,7 @@ view bike =
                                     [ fill "none"
                                     , stroke bike.color
                                     , strokeWidth (toString (bikeSize / 2))
+                                    , strokeLinecap "square"
                                     , points polylinePoints
                                     ]
                                     []

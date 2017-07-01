@@ -155,6 +155,20 @@ tryCollision method linePoints =
         |> List.head
 
 
+tryObstacleCollision : ( Vec2, Vec2 ) -> Obstacle -> Maybe Vec2
+tryObstacleCollision ( a, b ) { n, e, s, w } =
+    let
+        diff point =
+            isBetween ( w, e ) (getX point) && isBetween ( n, s ) (getY point)
+    in
+    if diff a then
+        Just a
+    else if diff b then
+        Just b
+    else
+        Nothing
+
+
 horizontalOrthogonal : ( Vec2, Vec2 ) -> ( Vec2, Vec2 ) -> Maybe Vec2
 horizontalOrthogonal move trail =
     let

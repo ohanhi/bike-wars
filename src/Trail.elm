@@ -8,6 +8,7 @@ module Trail exposing (..)
 
 -}
 
+import Explosion
 import Helpers exposing (..)
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, setX, setY, vec2)
 import Types exposing (..)
@@ -145,18 +146,8 @@ breakLines explosion lines =
 cutWith : Explosion -> Line -> List Line
 cutWith explosion line =
     let
-        ( cx, cy ) =
-            Vec2.toTuple explosion.center
-
-        r =
-            explosion.size / 2
-
         bounds =
-            { w = cx - r
-            , e = cx + r
-            , n = cy - r
-            , s = cy + r
-            }
+            Explosion.toObstacle explosion
     in
     case line of
         Horizontal points ->
