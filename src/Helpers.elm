@@ -1,30 +1,10 @@
 module Helpers exposing (..)
 
-{-| Doctest imports
-
-    import Math.Vector2 exposing (vec2)
-    import Types exposing (..)
-
--}
-
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Types exposing (..)
 
 
 {-| Sort points on the 2D plane.
-
-    sortPoints (vec2 0 0, vec2 10 0)
-    --> (vec2 0 0, vec2 10 0)
-
-    sortPoints (vec2 0 0, vec2 0 10)
-    --> (vec2 0 0, vec2 0 10)
-
-    sortPoints (vec2 10 0, vec2 0 0)
-    --> (vec2 0 0, vec2 10 0)
-
-    sortPoints (vec2 0 10, vec2 0 0)
-    --> (vec2 0 0, vec2 0 10)
-
 -}
 sortPoints : ( Vec2, Vec2 ) -> ( Vec2, Vec2 )
 sortPoints ( a, b ) =
@@ -37,23 +17,6 @@ sortPoints ( a, b ) =
         ( b, a )
 
 
-{-|
-
-    [[ vec2 100 100, vec2 90 100, vec2 90 120 ]]
-        |> trailToLines
-        |> linesToTrail
-    --> [[vec2 100 100, vec2 90 100, vec2 90 120]]
-
-    [ [ vec2 100 100, vec2 90 100, vec2 90 120, vec2 80 120 ]
-    , [ vec2 0 0, vec2 10 0, vec2 10 10 ]
-    ]
-        |> trailToLines
-        |> linesToTrail
-    --> [ [ vec2 100 100, vec2 90 100, vec2 90 120, vec2 80 120 ]
-    --> , [ vec2 0 0, vec2 10 0, vec2 10 10 ]
-    --> ]
-
--}
 linesToTrail : List Line -> Trail
 linesToTrail =
     List.foldr
@@ -80,33 +43,6 @@ linesToTrail =
         []
 
 
-{-|
-
-    trailToLines [[vec2 0 0, vec2 10 0, vec2 10 10]]
-    --> [ Horizontal (vec2 0 0, vec2 10 0), Vertical (vec2 10 0, vec2 10 10) ]
-
-    trailToLines [[vec2 0 0, vec2 10 0], [vec2 100 10, vec2 0 10]]
-    --> [ Horizontal (vec2 0 0, vec2 10 0), Horizontal (vec2 100 10, vec2 0 10) ]
-
-    trailToLines
-        [ [ vec2 324 100
-          , vec2 324 124
-          , vec2 278 124
-          , vec2 278 150
-          , vec2 309 150
-          ]
-        , [ vec2 339 150
-          , vec2 380 150
-          ]
-        ]
-    --> [ Vertical   (vec2 324 100, vec2 324 124)
-    --> , Horizontal (vec2 324 124, vec2 278 124)
-    --> , Vertical   (vec2 278 124, vec2 278 150)
-    --> , Horizontal (vec2 278 150, vec2 309 150)
-    --> , Horizontal (vec2 339 150, vec2 380 150)
-    --> ]
-
--}
 trailToLines : Trail -> List Line
 trailToLines trail =
     let
