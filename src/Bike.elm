@@ -8,13 +8,14 @@ import Keyboard.Extra
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
+import Trail
 import Types exposing (..)
 
 
 initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
 initBike controls color ( x, y ) direction =
     { position = vec2 x y
-    , trail = [ [ vec2 x y ] ]
+    , trail = [ [ vec2 x y, vec2 x y ] ]
     , collided = False
     , direction = direction
     , color = color
@@ -49,32 +50,51 @@ frontWall bike =
             vertical
 
 
-move : Float -> Trail -> Bike -> ( Bike, Maybe Explosion )
-move diff trail bike =
+update : Float -> List Explosion -> { current : Bike, other : Bike } -> ( Bike, Maybe Explosion )
+update diff explosions { current, other } =
     let
-        distance =
-            speedC * diff
+        walls =
+            frontWall other
+                :: omitLastSections current.trail
+                ++ other.trail
+                ++ Constants.gameBounds
 
         nextPosition =
-            computePosition bike.direction bike.position diff
+            computePosition current.direction current.position diff
 
         collisionPoint =
-            collision { position = bike.position, nextPosition = nextPosition } trail
+            collision
+                { position = current.position, nextPosition = nextPosition }
+                walls
+                (toObstacle other :: List.map Explosion.toObstacle explosions)
 
         ( collided, position, explosionPoint ) =
-            case ( bike.collided, collisionPoint ) of
-                ( False, Nothing ) ->
-                    ( False, nextPosition, Nothing )
-
+            case ( current.collided, collisionPoint ) of
                 ( False, Just point ) ->
+                    -- fresh collision
                     ( True, point, Just point )
 
                 ( True, _ ) ->
-                    ( True, bike.position, Nothing )
+                    -- old collision
+                    ( True, current.position, Nothing )
+
+                ( False, Nothing ) ->
+                    -- all good
+                    ( False, nextPosition, Nothing )
+
+        trail =
+            if collided then
+                current.trail
+                    |> Trail.breakIfNecessary explosions
+            else
+                current.trail
+                    |> swapPosition current.position
+                    |> Trail.breakIfNecessary explosions
     in
-    ( { bike
+    ( { current
         | position = position
         , collided = collided
+        , trail = trail
       }
     , Maybe.map Explosion.forBike explosionPoint
     )
@@ -85,10 +105,29 @@ turn key bike =
     if bike.controls.left == key || bike.controls.right == key then
         { bike
             | direction = computeDirection bike.controls bike.direction key
-            , trail = cons bike.position bike.trail
+            , trail =
+                bike.trail
+                    |> swapPosition bike.position
+                    |> cons bike.position
         }
     else
         bike
+
+
+toObstacle : Bike -> Obstacle
+toObstacle bike =
+    let
+        ( cx, cy ) =
+            Vec2.toTuple bike.position
+
+        r =
+            bikeSize / 2
+    in
+    { w = cx - r
+    , e = cx + r
+    , n = cy - r
+    , s = cy + r
+    }
 
 
 view : Bike -> List (Svg msg)
@@ -129,14 +168,30 @@ view bike =
                 , ")"
                 ]
 
-        trailPoints =
-            cons bike.position bike.trail
-                |> List.concatMap (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec)))
-                |> String.join " "
+        trail =
+            bike.trail
+                |> List.map
+                    (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec))
+                        >> String.join " "
+                        >> (\polylinePoints ->
+                                polyline
+                                    [ fill "none"
+                                    , stroke bike.color
+                                    , strokeWidth (toString (bikeSize / 2))
+                                    , strokeLinecap "square"
+                                    , points polylinePoints
+                                    ]
+                                    []
+                           )
+                    )
+
+        bikeView =
+            if bike.collided then
+                []
+            else
+                [ g [ transform transformValue ] [ bikeForm bikeSize bike.color ] ]
     in
-    [ polyline [ fill "none", stroke bike.color, strokeWidth (toString (bikeSize / 2)), points trailPoints ] []
-    , g [ transform transformValue ] [ bikeForm bikeSize bike.color ]
-    ]
+    trail ++ bikeView
 
 
 bikeForm : Float -> String -> Svg msg
@@ -167,11 +222,21 @@ cons point trail =
             (point :: first) :: rest
 
 
+swapPosition : Vec2 -> Trail -> Trail
+swapPosition point trail =
+    case trail of
+        (head :: tail) :: rest ->
+            (point :: tail) :: rest
+
+        _ ->
+            trail
+
+
 omitLastSections : Trail -> Trail
 omitLastSections trail =
     case trail of
         first :: rest ->
-            List.drop 1 first :: rest
+            List.drop 2 first :: rest
 
         other ->
             other

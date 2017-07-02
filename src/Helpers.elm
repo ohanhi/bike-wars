@@ -1,29 +1,10 @@
 module Helpers exposing (..)
 
-{-| Doctest imports
-
-    import Math.Vector2 exposing (vec2)
-
--}
-
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Types exposing (..)
 
 
 {-| Sort points on the 2D plane.
-
-    sortPoints (vec2 0 0, vec2 10 0)
-    --> (vec2 0 0, vec2 10 0)
-
-    sortPoints (vec2 0 0, vec2 0 10)
-    --> (vec2 0 0, vec2 0 10)
-
-    sortPoints (vec2 10 0, vec2 0 0)
-    --> (vec2 0 0, vec2 10 0)
-
-    sortPoints (vec2 0 10, vec2 0 0)
-    --> (vec2 0 0, vec2 0 10)
-
 -}
 sortPoints : ( Vec2, Vec2 ) -> ( Vec2, Vec2 )
 sortPoints ( a, b ) =
@@ -36,53 +17,36 @@ sortPoints ( a, b ) =
         ( b, a )
 
 
-{-|
-
-    [[ vec2 100 100, vec2 90 100, vec2 90 120 ]]
-        |> trailToLines
-        |> linesToTrail
-    --> [[vec2 100 100, vec2 90 100, vec2 90 120]]
-
-    [ [ vec2 100 100, vec2 90 100, vec2 90 120 ]
-    , [ vec2 0 0, vec2 10 0, vec2 10 10 ]
-    ]
-        |> trailToLines
-        |> linesToTrail
-    --> [ [ vec2 100 100, vec2 90 100, vec2 90 120 ]
-    --> , [ vec2 0 0, vec2 10 0, vec2 10 10 ]
-    --> ]
-
--}
 linesToTrail : List Line -> Trail
 linesToTrail =
-    List.map List.reverse
-        << List.foldr
-            (\line acc ->
-                let
-                    ( start, end ) =
-                        case line of
-                            Horizontal points ->
-                                points
+    List.foldr
+        (\line acc ->
+            let
+                ( start, end ) =
+                    case line of
+                        Horizontal points ->
+                            points
 
-                            Vertical points ->
-                                points
-                in
-                case acc of
-                    [] ->
-                        [ [ end, start ] ]
+                        Vertical points ->
+                            points
+            in
+            case acc of
+                [] ->
+                    [ [ start, end ] ]
 
-                    accHead :: accTail ->
-                        if List.head accHead == Just start then
-                            (end :: accHead) :: accTail
-                        else
-                            [ end, start ] :: acc
-            )
-            []
+                accHead :: accTail ->
+                    if List.head accHead == Just end then
+                        (start :: accHead) :: accTail
+                    else
+                        [ start, end ] :: acc
+        )
+        []
 
 
 trailToLines : Trail -> List Line
-trailToLines =
+trailToLines trail =
     let
+        recurse : List (Maybe Line) -> List Vec2 -> List (Maybe Line)
         recurse acc list =
             case list of
                 [] ->
@@ -94,7 +58,10 @@ trailToLines =
                 a :: b :: tail ->
                     recurse (toLine a b :: acc) (b :: tail)
     in
-    List.filterMap identity << List.concatMap (recurse [])
+    trail
+        |> List.map (List.reverse << recurse [])
+        |> List.concat
+        |> List.filterMap identity
 
 
 toLine : Vec2 -> Vec2 -> Maybe Line
@@ -110,8 +77,11 @@ toLine a b =
         Nothing
     else if aX == bX then
         Just (Vertical ( a, b ))
-    else
+    else if aY == bY then
         Just (Horizontal ( a, b ))
+    else
+        Nothing
+            |> Debug.log ("Line invalid: " ++ toString ( a, b ))
 
 
 tryCollision : (( Vec2, Vec2 ) -> Maybe Vec2) -> List ( Vec2, Vec2 ) -> Maybe Vec2
@@ -119,6 +89,20 @@ tryCollision method linePoints =
     linePoints
         |> List.filterMap method
         |> List.head
+
+
+tryObstacleCollision : ( Vec2, Vec2 ) -> Obstacle -> Maybe Vec2
+tryObstacleCollision ( a, b ) { n, e, s, w } =
+    let
+        diff point =
+            isBetween ( w, e ) (getX point) && isBetween ( n, s ) (getY point)
+    in
+    if diff a then
+        Just a
+    else if diff b then
+        Just b
+    else
+        Nothing
 
 
 horizontalOrthogonal : ( Vec2, Vec2 ) -> ( Vec2, Vec2 ) -> Maybe Vec2

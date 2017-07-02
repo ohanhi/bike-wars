@@ -4,17 +4,34 @@ import Constants exposing (..)
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Types exposing (Explosion, Trail)
+import Types exposing (..)
 
 
 forBike : Vec2 -> Explosion
 forBike center =
-    { center = center, size = 30.0, ticksLeft = 30 }
+    { center = center, size = 30.0, ticksLeft = 15 }
+
+
+toObstacle : Explosion -> Obstacle
+toObstacle explosion =
+    let
+        ( cx, cy ) =
+            Vec2.toTuple explosion.center
+
+        r =
+            explosion.size / 2
+    in
+    { w = cx - r
+    , e = cx + r
+    , n = cy - r
+    , s = cy + r
+    }
 
 
 view : List Explosion -> List (Svg msg)
 view =
-    List.map explosionForm
+    List.reverse
+        >> List.map explosionForm
 
 
 update : List Explosion -> List Explosion

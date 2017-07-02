@@ -9,7 +9,7 @@ import Test exposing (..)
 
 coord : Fuzzer Float
 coord =
-    floatRange 2000 2000
+    floatRange -1000 2000
 
 
 spec : Test
@@ -21,6 +21,7 @@ spec =
                     Expect.equal
                         (collision { position = vec2 startX y, nextPosition = vec2 endX y }
                             [ [ vec2 lineX y, vec2 lineX (y + 10) ] ]
+                            []
                         )
                     <|
                         if startX == endX then
@@ -34,6 +35,7 @@ spec =
                     Expect.equal
                         (collision { position = vec2 x startY, nextPosition = vec2 x endY }
                             [ [ vec2 x lineY, vec2 (x + 10) lineY ] ]
+                            []
                         )
                     <|
                         if startY == endY then

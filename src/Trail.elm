@@ -4,20 +4,31 @@ module Trail exposing (..)
 
     import Math.Vector2 exposing (vec2)
     import Types exposing (..)
+    import Helpers exposing (..)
 
 -}
 
+import Explosion
 import Helpers exposing (..)
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, setX, setY, vec2)
 import Types exposing (..)
 
 
-break : Explosion -> Trail -> Trail
-break explosion trail =
-    trail
-        |> trailToLines
-        |> breakLines explosion
-        |> linesToTrail
+breakIfNecessary : List Explosion -> Trail -> Trail
+breakIfNecessary explosions trail =
+    explosions
+        |> List.head
+        |> (\exp ->
+                case exp of
+                    Nothing ->
+                        trail
+
+                    Just explosion ->
+                        trail
+                            |> trailToLines
+                            |> breakLines explosion
+                            |> linesToTrail
+           )
 
 
 {-| Remove parts of the trail that are under the explosion.
@@ -38,6 +49,13 @@ Simple horizontals
       { center = vec2 50 0, size = 50, ticksLeft = 30 }
       [ Horizontal (vec2 0 0, vec2 100 0) ]
     --> [ Horizontal (vec2 0 0, vec2 25 0), Horizontal (vec2 75 0, vec2 100 0) ]
+
+    breakLines
+      { center = vec2 210 120, size = 30, ticksLeft = 1 }
+      [ Horizontal ( vec2 246 120, vec2 20 120) ]
+    --> [ Horizontal (vec2 246 120, vec2 225 120)
+    --> , Horizontal (vec2 195 120, vec2 20 120)
+    --> ]
 
     breakLines
       { center = vec2 0 0, size = 50, ticksLeft = 30 }
@@ -98,6 +116,34 @@ More complex
     --> , Horizontal (vec2 -100 10, vec2 -50 10)
     --> ]
 
+    breakLines
+      { center = vec2 365 150, size = 30, ticksLeft = 3 }
+      (trailToLines [[ vec2 185 150, vec2 20 150 ]])
+    --> (trailToLines [[ vec2 185 150, vec2 20 150 ]])
+
+    breakLines
+        { center = vec2 324 150, size = 30, ticksLeft = 30 }
+        (trailToLines
+            [ [ vec2 324 149
+              , vec2 324 124
+              , vec2 278 124
+              , vec2 278 150
+              , vec2 380 150
+              ]
+            ]
+        )
+    --> trailToLines
+    -->     [ [ vec2 324 135
+    -->       , vec2 324 124
+    -->       , vec2 278 124
+    -->       , vec2 278 150
+    -->       , vec2 309 150
+    -->       ]
+    -->     , [ vec2 339 150
+    -->       , vec2 380 150
+    -->       ]
+    -->     ]
+
 -}
 breakLines : Explosion -> List Line -> List Line
 breakLines explosion lines =
@@ -107,18 +153,8 @@ breakLines explosion lines =
 cutWith : Explosion -> Line -> List Line
 cutWith explosion line =
     let
-        ( cx, cy ) =
-            Vec2.toTuple explosion.center
-
-        r =
-            explosion.size / 2
-
         bounds =
-            { w = cx - r
-            , e = cx + r
-            , n = cy - r
-            , s = cy + r
-            }
+            Explosion.toObstacle explosion
     in
     case line of
         Horizontal points ->
@@ -134,7 +170,7 @@ horizontalPairs :
     { a | e : Float, n : Float, s : Float, w : Float }
     -> ( Vec2, Vec2 )
     -> List ( Vec2, Vec2 )
-horizontalPairs { n, w, s, e } (( start, end ) as points) =
+horizontalPairs { n, w, s, e } (( end, start ) as points) =
     let
         ( small, large ) =
             sortPoints points
@@ -144,15 +180,15 @@ horizontalPairs { n, w, s, e } (( start, end ) as points) =
 
         mapSmall =
             if smallIsStart then
-                Tuple.mapFirst
-            else
                 Tuple.mapSecond
+            else
+                Tuple.mapFirst
 
         mapLarge =
             if smallIsStart then
-                Tuple.mapSecond
-            else
                 Tuple.mapFirst
+            else
+                Tuple.mapSecond
     in
     if isBetween ( n, s ) (getY small) then
         let
@@ -161,26 +197,35 @@ horizontalPairs { n, w, s, e } (( start, end ) as points) =
 
             largeIsBetween =
                 isBetween ( w, e ) (getX large)
+
+            explosionIsBetween =
+                getX small < w && e < getX large
+
+            y =
+                getY small
         in
-        case ( smallIsBetween, largeIsBetween ) of
-            ( True, True ) ->
-                []
+        case ( smallIsBetween, largeIsBetween, explosionIsBetween ) of
+            ( False, False, False ) ->
+                [ points ]
 
-            ( True, False ) ->
-                [ mapSmall (setX e) points ]
-
-            ( False, True ) ->
-                [ mapLarge (setX w) points ]
-
-            ( False, False ) ->
+            ( False, False, True ) ->
                 if smallIsStart then
-                    [ ( small, vec2 w (getY small) )
-                    , ( vec2 e (getY large), large )
+                    [ mapSmall (setX e) points
+                    , mapLarge (setX w) points
                     ]
                 else
-                    [ ( vec2 e (getY large), large )
-                    , ( small, vec2 w (getY small) )
+                    [ mapLarge (setX w) points
+                    , mapSmall (setX e) points
                     ]
+
+            ( True, False, _ ) ->
+                [ mapSmall (setX e) points ]
+
+            ( False, True, _ ) ->
+                [ mapLarge (setX w) points ]
+
+            ( True, True, _ ) ->
+                []
     else
         [ points ]
 
@@ -189,7 +234,7 @@ verticalPairs :
     { a | e : Float, n : Float, s : Float, w : Float }
     -> ( Vec2, Vec2 )
     -> List ( Vec2, Vec2 )
-verticalPairs { n, w, s, e } (( start, end ) as points) =
+verticalPairs { n, w, s, e } (( end, start ) as points) =
     let
         ( small, large ) =
             sortPoints points
@@ -199,15 +244,15 @@ verticalPairs { n, w, s, e } (( start, end ) as points) =
 
         mapSmall =
             if smallIsStart then
-                Tuple.mapFirst
-            else
                 Tuple.mapSecond
+            else
+                Tuple.mapFirst
 
         mapLarge =
             if smallIsStart then
-                Tuple.mapSecond
-            else
                 Tuple.mapFirst
+            else
+                Tuple.mapSecond
     in
     if isBetween ( w, e ) (getX small) then
         let
@@ -216,25 +261,31 @@ verticalPairs { n, w, s, e } (( start, end ) as points) =
 
             largeIsBetween =
                 isBetween ( n, s ) (getY large)
+
+            explosionIsBetween =
+                getY small < n && s < getY large
         in
-        case ( smallIsBetween, largeIsBetween ) of
-            ( True, True ) ->
+        case ( smallIsBetween, largeIsBetween, explosionIsBetween ) of
+            ( False, False, False ) ->
+                [ points ]
+
+            ( True, True, _ ) ->
                 []
 
-            ( True, False ) ->
+            ( True, False, _ ) ->
                 [ mapSmall (setY s) points ]
 
-            ( False, True ) ->
+            ( False, True, _ ) ->
                 [ mapLarge (setY n) points ]
 
-            ( False, False ) ->
+            ( False, False, _ ) ->
                 if smallIsStart then
-                    [ ( small, vec2 (getX small) n )
-                    , ( vec2 (getX large) s, large )
+                    [ mapSmall (setY s) points
+                    , mapLarge (setY n) points
                     ]
                 else
-                    [ ( vec2 (getX large) s, large )
-                    , ( small, vec2 (getX small) n )
+                    [ mapLarge (setY n) points
+                    , mapSmall (setY s) points
                     ]
     else
-        [ ( small, large ) ]
+        [ points ]

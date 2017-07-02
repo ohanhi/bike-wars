@@ -36,3 +36,11 @@ type alias Explosion =
     , size : Float
     , ticksLeft : Int
     }
+
+
+type alias Obstacle =
+    { n : Float
+    , e : Float
+    , s : Float
+    , w : Float
+    }

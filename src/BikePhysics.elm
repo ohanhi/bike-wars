@@ -48,27 +48,48 @@ computeDirection controls direction key =
         direction
 
 
-{-| This function should find any sort of collision with the current walls.
+{-| This function should find any sort of collision with the current walls or explosions.
 -}
-collision : { position : Vec2, nextPosition : Vec2 } -> Trail -> Maybe Vec2
-collision { position, nextPosition } trail =
+collision : { position : Vec2, nextPosition : Vec2 } -> Trail -> List Obstacle -> Maybe Vec2
+collision { position, nextPosition } trail obstacles =
     let
         lines =
             trailToLines trail
 
         moveLine =
             toLine position nextPosition
+
+        try : Maybe Vec2 -> Maybe Vec2 -> Maybe Vec2
+        try maybeOne maybeTwo =
+            case maybeOne of
+                Just collision ->
+                    Just collision
+
+                Nothing ->
+                    maybeTwo
     in
     case moveLine of
         Just (Horizontal points) ->
-            lines
-                |> List.filterMap onlyVertical
-                |> tryCollision (horizontalOrthogonal points)
+            try
+                (obstacles
+                    |> List.filterMap (tryObstacleCollision points)
+                    |> List.head
+                )
+                (lines
+                    |> List.filterMap onlyVertical
+                    |> tryCollision (horizontalOrthogonal points)
+                )
 
         Just (Vertical points) ->
-            lines
-                |> List.filterMap onlyHorizontal
-                |> tryCollision (verticalOrthogonal points)
+            try
+                (obstacles
+                    |> List.filterMap (tryObstacleCollision points)
+                    |> List.head
+                )
+                (lines
+                    |> List.filterMap onlyHorizontal
+                    |> tryCollision (verticalOrthogonal points)
+                )
 
         Nothing ->
             Nothing
