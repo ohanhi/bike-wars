@@ -51,6 +51,13 @@ Simple horizontals
     --> [ Horizontal (vec2 0 0, vec2 25 0), Horizontal (vec2 75 0, vec2 100 0) ]
 
     breakLines
+      { center = vec2 210 120, size = 30, ticksLeft = 1 }
+      [ Horizontal ( vec2 246 120, vec2 20 120) ]
+    --> [ Horizontal (vec2 246 120, vec2 225 120)
+    --> , Horizontal (vec2 195 120, vec2 20 120)
+    --> ]
+
+    breakLines
       { center = vec2 0 0, size = 50, ticksLeft = 30 }
       [ Horizontal (vec2 0 0, vec2 20 0) ]
     --> []
@@ -163,7 +170,7 @@ horizontalPairs :
     { a | e : Float, n : Float, s : Float, w : Float }
     -> ( Vec2, Vec2 )
     -> List ( Vec2, Vec2 )
-horizontalPairs { n, w, s, e } (( start, end ) as points) =
+horizontalPairs { n, w, s, e } (( end, start ) as points) =
     let
         ( small, large ) =
             sortPoints points
@@ -173,15 +180,15 @@ horizontalPairs { n, w, s, e } (( start, end ) as points) =
 
         mapSmall =
             if smallIsStart then
-                Tuple.mapFirst
-            else
                 Tuple.mapSecond
+            else
+                Tuple.mapFirst
 
         mapLarge =
             if smallIsStart then
-                Tuple.mapSecond
-            else
                 Tuple.mapFirst
+            else
+                Tuple.mapSecond
     in
     if isBetween ( n, s ) (getY small) then
         let
@@ -193,6 +200,9 @@ horizontalPairs { n, w, s, e } (( start, end ) as points) =
 
             explosionIsBetween =
                 getX small < w && e < getX large
+
+            y =
+                getY small
         in
         case ( smallIsBetween, largeIsBetween, explosionIsBetween ) of
             ( False, False, False ) ->
@@ -200,12 +210,12 @@ horizontalPairs { n, w, s, e } (( start, end ) as points) =
 
             ( False, False, True ) ->
                 if smallIsStart then
-                    [ ( small, vec2 w (getY small) )
-                    , ( vec2 e (getY large), large )
+                    [ mapSmall (setX e) points
+                    , mapLarge (setX w) points
                     ]
                 else
-                    [ ( vec2 e (getY large), large )
-                    , ( small, vec2 w (getY small) )
+                    [ mapLarge (setX w) points
+                    , mapSmall (setX e) points
                     ]
 
             ( True, False, _ ) ->
@@ -224,7 +234,7 @@ verticalPairs :
     { a | e : Float, n : Float, s : Float, w : Float }
     -> ( Vec2, Vec2 )
     -> List ( Vec2, Vec2 )
-verticalPairs { n, w, s, e } (( start, end ) as points) =
+verticalPairs { n, w, s, e } (( end, start ) as points) =
     let
         ( small, large ) =
             sortPoints points
@@ -234,15 +244,15 @@ verticalPairs { n, w, s, e } (( start, end ) as points) =
 
         mapSmall =
             if smallIsStart then
-                Tuple.mapFirst
-            else
                 Tuple.mapSecond
+            else
+                Tuple.mapFirst
 
         mapLarge =
             if smallIsStart then
-                Tuple.mapSecond
-            else
                 Tuple.mapFirst
+            else
+                Tuple.mapSecond
     in
     if isBetween ( w, e ) (getX small) then
         let
@@ -270,12 +280,12 @@ verticalPairs { n, w, s, e } (( start, end ) as points) =
 
             ( False, False, _ ) ->
                 if smallIsStart then
-                    [ ( small, vec2 (getX small) n )
-                    , ( vec2 (getX large) s, large )
+                    [ mapSmall (setY s) points
+                    , mapLarge (setY n) points
                     ]
                 else
-                    [ ( vec2 (getX large) s, large )
-                    , ( small, vec2 (getX small) n )
+                    [ mapLarge (setY n) points
+                    , mapSmall (setY s) points
                     ]
     else
         [ points ]
