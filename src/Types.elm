@@ -1,8 +1,14 @@
 module Types exposing (..)
 
-import Direction exposing (Direction)
 import Keyboard.Extra exposing (Key)
 import Math.Vector2 exposing (Vec2)
+
+
+type Direction
+    = North
+    | East
+    | South
+    | West
 
 
 type Line
@@ -44,3 +50,7 @@ type alias Obstacle =
     , s : Float
     , w : Float
     }
+
+
+type Weapon
+    = MegaBlaster

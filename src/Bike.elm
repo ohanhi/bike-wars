@@ -2,7 +2,6 @@ module Bike exposing (..)
 
 import BikePhysics exposing (..)
 import Constants exposing (bikeSize, speedC)
-import Direction exposing (..)
 import Explosion
 import Keyboard.Extra
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
@@ -10,6 +9,7 @@ import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Trail
 import Types exposing (..)
+import Weapon
 
 
 initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
@@ -98,6 +98,14 @@ update diff explosions { current, other } =
       }
     , Maybe.map Explosion.forBike explosionPoint
     )
+
+
+shoot : Keyboard.Extra.Key -> { current : Bike, other : Bike } -> List Explosion
+shoot key { current, other } =
+    if key == current.controls.up then
+        [ Weapon.shoot MegaBlaster current.direction current.position (current.trail ++ other.trail) ]
+    else
+        []
 
 
 turn : Keyboard.Extra.Key -> Bike -> Bike

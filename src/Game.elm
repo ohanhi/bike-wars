@@ -3,7 +3,6 @@ module Game exposing (..)
 import AnimationFrame
 import Bike
 import Constants exposing (..)
-import Direction exposing (..)
 import Explosion
 import Html exposing (..)
 import Html.Attributes exposing (style)
@@ -114,9 +113,14 @@ pureUpdate msg model =
                     let
                         ( one, two ) =
                             model.bikes
+
+                        shots =
+                            Bike.shoot key { current = one, other = two }
+                                ++ Bike.shoot key { current = two, other = one }
                     in
                     { model
                         | bikes = ( Bike.turn key one, Bike.turn key two )
+                        , explosions = shots ++ model.explosions
                     }
 
                 _ ->
