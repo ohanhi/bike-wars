@@ -16,19 +16,22 @@ import Types exposing (..)
 
 breakIfNecessary : List Explosion -> Trail -> Trail
 breakIfNecessary explosions trail =
-    explosions
-        |> List.head
-        |> (\exp ->
-                case exp of
-                    Nothing ->
-                        trail
+    case explosions of
+        [] ->
+            trail
 
-                    Just explosion ->
-                        trail
-                            |> trailToLines
-                            |> breakLines explosion
-                            |> linesToTrail
-           )
+        a :: rest ->
+            trail
+                |> breakTrail a
+                |> breakIfNecessary rest
+
+
+breakTrail : Explosion -> Trail -> Trail
+breakTrail explosion trail =
+    trail
+        |> trailToLines
+        |> breakLines explosion
+        |> linesToTrail
 
 
 {-| Remove parts of the trail that are under the explosion.
