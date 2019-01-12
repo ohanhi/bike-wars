@@ -1,4 +1,4 @@
-module Helpers exposing (..)
+module Helpers exposing (horizontalOrthogonal, isBetween, isBetweenWith, linesToTrail, onlyHorizontal, onlyVertical, sortPoints, toLine, trailToLines, tryCollision, tryObstacleCollision, verticalOrthogonal)
 
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Types exposing (..)
@@ -13,6 +13,7 @@ sortPoints ( a, b ) =
             || (getY a == getY b && getX a < getX b)
     then
         ( a, b )
+
     else
         ( b, a )
 
@@ -37,6 +38,7 @@ linesToTrail =
                 accHead :: accTail ->
                     if List.head accHead == Just end then
                         (start :: accHead) :: accTail
+
                     else
                         [ start, end ] :: acc
         )
@@ -65,23 +67,25 @@ trailToLines trail =
 
 
 toLine : Vec2 -> Vec2 -> Maybe Line
-toLine a b =
+toLine vecA vecB =
     let
-        ( aX, aY ) =
-            Vec2.toTuple a
+        a =
+            Vec2.toRecord vecA
 
-        ( bX, bY ) =
-            Vec2.toTuple b
+        b =
+            Vec2.toRecord vecB
     in
     if a == b then
         Nothing
-    else if aX == bX then
-        Just (Vertical ( a, b ))
-    else if aY == bY then
-        Just (Horizontal ( a, b ))
+
+    else if a.x == b.x then
+        Just (Vertical ( vecA, vecB ))
+
+    else if a.y == b.y then
+        Just (Horizontal ( vecA, vecB ))
+
     else
-        Nothing
-            |> Debug.log ("Line invalid: " ++ toString ( a, b ))
+        Debug.todo "Line invalid" ( a, b )
 
 
 tryCollision : (( Vec2, Vec2 ) -> Maybe Vec2) -> List ( Vec2, Vec2 ) -> Maybe Vec2
@@ -99,8 +103,10 @@ tryObstacleCollision ( a, b ) { n, e, s, w } =
     in
     if diff a then
         Just a
+
     else if diff b then
         Just b
+
     else
         Nothing
 
@@ -116,6 +122,7 @@ horizontalOrthogonal move trail =
     in
     if isBetweenWith getX ( a, b ) trailA && isBetweenWith getY ( trailA, trailB ) a then
         Just (vec2 (getX trailA) (getY a))
+
     else
         Nothing
 
@@ -131,6 +138,7 @@ verticalOrthogonal move trail =
     in
     if isBetweenWith getY ( a, b ) trailA && isBetweenWith getX ( trailA, trailB ) a then
         Just (vec2 (getX a) (getY trailA))
+
     else
         Nothing
 

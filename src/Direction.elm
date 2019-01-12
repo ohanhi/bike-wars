@@ -1,4 +1,4 @@
-module Direction exposing (..)
+module Direction exposing (turnLeft, turnRight)
 
 import Types exposing (Direction(..))
 

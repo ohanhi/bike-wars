@@ -1,4 +1,4 @@
-module Explosion exposing (..)
+module Explosion exposing (explosionForm, forBike, toObstacle, update, updateOne, view)
 
 import Constants exposing (..)
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
@@ -15,16 +15,16 @@ forBike center =
 toObstacle : Explosion -> Obstacle
 toObstacle explosion =
     let
-        ( cx, cy ) =
-            Vec2.toTuple explosion.center
+        { x, y } =
+            Vec2.toRecord explosion.center
 
         r =
             explosion.size / 2
     in
-    { w = cx - r
-    , e = cx + r
-    , n = cy - r
-    , s = cy + r
+    { w = x - r
+    , e = x + r
+    , n = y - r
+    , s = y + r
     }
 
 
@@ -48,15 +48,15 @@ explosionForm : Explosion -> Svg msg
 explosionForm { size, ticksLeft, center } =
     let
         strokeW =
-            toFloat (ticksLeft % 10) * 0.05 * size
+            toFloat (modBy 10 ticksLeft) * 0.05 * size
     in
     rect
-        [ strokeWidth (toString strokeW)
+        [ strokeWidth (String.fromFloat strokeW)
         , stroke colors.red
         , fill colors.yellow
-        , height (toString (size - strokeW))
-        , width (toString (size - strokeW))
-        , x (toString (getX center - size / 2 + strokeW / 2))
-        , y (toString (getY center - size / 2 + strokeW / 2))
+        , height (String.fromFloat (size - strokeW))
+        , width (String.fromFloat (size - strokeW))
+        , x (String.fromFloat (getX center - size / 2 + strokeW / 2))
+        , y (String.fromFloat (getY center - size / 2 + strokeW / 2))
         ]
         []

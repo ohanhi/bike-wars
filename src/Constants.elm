@@ -1,4 +1,4 @@
-module Constants exposing (..)
+module Constants exposing (bikeSize, colors, gameBounds, h, speedC, ticksPerSecond, trailSize, w)
 
 import Math.Vector2 exposing (vec2)
 import Types exposing (Trail)

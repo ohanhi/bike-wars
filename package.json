@@ -14,7 +14,5 @@
     "url": "git+https://github.com/ohanhi/bike-wars.git"
   },
   "license": "BSD-3-Clause",
-  "devDependencies": {
-    "elm": "0.18"
-  }
+  "devDependencies": {}
 }

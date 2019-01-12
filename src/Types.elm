@@ -1,6 +1,6 @@
-module Types exposing (..)
+module Types exposing (Bike, Controls, Direction(..), Explosion, Line(..), Obstacle, Trail, Weapon(..))
 
-import Keyboard.Extra exposing (Key)
+import Keyboard exposing (Key)
 import Math.Vector2 exposing (Vec2)
 
 

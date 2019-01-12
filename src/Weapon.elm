@@ -1,4 +1,4 @@
-module Weapon exposing (..)
+module Weapon exposing (shoot, shootMegaBlaster)
 
 import BikePhysics
 import Constants as C
@@ -18,8 +18,8 @@ shoot { weapon, direction, position } trail =
 
 shootMegaBlaster direction position trail state =
     let
-        ( x, y ) =
-            Vec2.toTuple position
+        { x, y } =
+            Vec2.toRecord position
 
         arenaBorder =
             case direction of
@@ -45,6 +45,7 @@ shootMegaBlaster direction position trail state =
     ( MegaBlaster { used = True }
     , if state.used then
         Nothing
+
       else
         Just { center = collisionPoint, size = 50, ticksLeft = 10 }
     )

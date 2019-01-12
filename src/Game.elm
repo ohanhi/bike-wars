@@ -1,12 +1,13 @@
-module Game exposing (..)
+module Game exposing (Bikes, EndState(..), GameStatus(..), Model, Msg(..), Player(..), init, initBikes, initModel, pureUpdate, stepGame, subscriptions, svgView, update, view)
 
-import AnimationFrame
 import Bike
+import Browser
+import Browser.Events
 import Constants exposing (..)
 import Explosion
 import Html exposing (..)
 import Html.Attributes exposing (style)
-import Keyboard.Extra exposing (Key(..))
+import Keyboard exposing (Key(..))
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Types exposing (..)
@@ -41,13 +42,13 @@ type alias Model =
 
 type Msg
     = TimeDiff Float
-    | KeyDown Key
+    | KeyDown (Maybe Key)
 
 
 initBikes : Bikes
 initBikes =
     ( Bike.initBike
-        { left = CharA, right = CharD, up = CharW }
+        { left = Character "a", right = Character "d", up = Character "w" }
         colors.red
         ( 20, h / 5 * 2 )
         East
@@ -89,16 +90,19 @@ subscriptions model =
 
         ticks =
             if needsToAnimate then
-                [ AnimationFrame.diffs TimeDiff ]
+                [ Browser.Events.onAnimationFrameDelta TimeDiff ]
+
             else
                 []
     in
-    Sub.batch ([ Keyboard.Extra.downs KeyDown ] ++ ticks)
+    Sub.batch ([ Keyboard.downs (Keyboard.anyKey >> KeyDown) ] ++ ticks)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    pureUpdate msg model ! []
+    ( pureUpdate msg model
+    , Cmd.none
+    )
 
 
 pureUpdate : Msg -> Model -> Model
@@ -107,33 +111,41 @@ pureUpdate msg model =
         TimeDiff diff ->
             stepGame model diff
 
-        KeyDown key ->
-            case model.status of
-                Running ->
-                    let
-                        ( one, two ) =
-                            model.bikes
+        KeyDown maybeKey ->
+            maybeKey
+                |> Maybe.map (handleInput model)
+                |> Maybe.withDefault model
 
-                        ( oneUpdated, oneShot ) =
-                            Bike.shoot key { current = two, other = one }
 
-                        ( twoUpdated, twoShot ) =
-                            Bike.shoot key { current = one, other = two }
+handleInput : Model -> Key -> Model
+handleInput model key =
+    case model.status of
+        Running ->
+            let
+                ( one, two ) =
+                    model.bikes
 
-                        shots =
-                            [ oneShot, twoShot ]
-                                |> List.filterMap identity
-                    in
-                    { model
-                        | bikes = ( Bike.turn key oneUpdated, Bike.turn key twoUpdated )
-                        , explosions = shots ++ model.explosions
-                    }
+                ( oneUpdated, oneShot ) =
+                    Bike.shoot key { current = two, other = one }
 
-                _ ->
-                    if key == Space then
-                        { initModel | status = Running }
-                    else
-                        model
+                ( twoUpdated, twoShot ) =
+                    Bike.shoot key { current = one, other = two }
+
+                shots =
+                    [ oneShot, twoShot ]
+                        |> List.filterMap identity
+            in
+            { model
+                | bikes = ( Bike.turn key oneUpdated, Bike.turn key twoUpdated )
+                , explosions = shots ++ model.explosions
+            }
+
+        _ ->
+            if key == Character " " then
+                { initModel | status = Running }
+
+            else
+                model
 
 
 stepGame : Model -> Float -> Model
@@ -161,10 +173,13 @@ stepGame model diff =
         status =
             if allCollided then
                 GameOver Draw
+
             else if nextOne.collided then
                 GameOver (GameWon PlayerTwo)
+
             else if nextTwo.collided then
                 GameOver (GameWon PlayerOne)
+
             else
                 Running
     in
@@ -177,14 +192,12 @@ stepGame model diff =
 
 view : Model -> Html never
 view model =
-    div [ Html.Attributes.style [ ( "background-color", colors.grey ) ] ]
+    div [ Html.Attributes.style "background-color" colors.grey ]
         [ svg
-            [ viewBox ([ 0, 0, w, h ] |> List.map toString |> String.join " ")
-            , Html.Attributes.style
-                [ ( "height", "100vh" )
-                , ( "display", "block" )
-                , ( "margin", "0 auto" )
-                ]
+            [ viewBox ([ 0, 0, w, h ] |> List.map String.fromFloat |> String.join " ")
+            , Html.Attributes.style "height" "100vh"
+            , Html.Attributes.style "display" "block"
+            , Html.Attributes.style "margin" "0 auto"
             ]
             (svgView model)
         ]
@@ -194,17 +207,17 @@ svgView : Model -> List (Svg never)
 svgView model =
     let
         translucentRect =
-            rect [ width (toString w), height (toString h), fill "rgba(0,0,0,0.5)" ] []
+            rect [ width (String.fromFloat w), height (String.fromFloat h), fill "rgba(0,0,0,0.5)" ] []
 
         makeOverlay string xOffset =
             [ translucentRect
             , text_
-                [ x (toString (w / 2))
-                , y (toString (h / 2))
+                [ x (String.fromFloat (w / 2))
+                , y (String.fromFloat (h / 2))
                 , fontSize "20"
                 , fontFamily "monospace"
                 , fill colors.white
-                , transform ("translate(" ++ toString xOffset ++ ", -10)")
+                , transform ("translate(" ++ String.fromFloat xOffset ++ ", -10)")
                 ]
                 [ Svg.text string ]
             ]
@@ -234,7 +247,7 @@ svgView model =
         ( one, two ) =
             model.bikes
     in
-    [ rect [ width (toString w), height (toString h), stroke colors.grey, strokeWidth (toString bikeSize), fill colors.blue ] []
+    [ rect [ width (String.fromFloat w), height (String.fromFloat h), stroke colors.grey, strokeWidth (String.fromFloat bikeSize), fill colors.blue ] []
     , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill colors.white ] [ Svg.text "Bike Wars" ]
     ]
         ++ Bike.view one

@@ -1,14 +1,18 @@
-module Main exposing (..)
+module Main exposing (main)
 
+import Browser
 import Game exposing (..)
-import Html
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
-    Html.program
-        { init = init
+    Browser.document
+        { init = \_ -> init
         , update = update
-        , view = view
+        , view =
+            \model ->
+                { title = "Bike Wars"
+                , body = [ view model ]
+                }
         , subscriptions = subscriptions
         }
