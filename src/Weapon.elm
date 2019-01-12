@@ -6,8 +6,17 @@ import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Types exposing (..)
 
 
-shoot : Weapon -> Direction -> Vec2 -> Trail -> Explosion
-shoot weapon direction position trail =
+shoot : { a | weapon : Weapon, direction : Direction, position : Vec2 } -> Trail -> ( Weapon, Maybe Explosion )
+shoot { weapon, direction, position } trail =
+    case weapon of
+        MegaBlaster state ->
+            shootMegaBlaster direction position trail state
+
+        other ->
+            ( other, Nothing )
+
+
+shootMegaBlaster direction position trail state =
     let
         ( x, y ) =
             Vec2.toTuple position
@@ -33,4 +42,9 @@ shoot weapon direction position trail =
             BikePhysics.collision move trail []
                 |> Maybe.withDefault arenaBorder
     in
-    { center = collisionPoint, size = 50, ticksLeft = 10 }
+    ( MegaBlaster { used = True }
+    , if state.used then
+        Nothing
+      else
+        Just { center = collisionPoint, size = 50, ticksLeft = 10 }
+    )

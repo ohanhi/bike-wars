@@ -20,6 +20,7 @@ initBike controls color ( x, y ) direction =
     , direction = direction
     , color = color
     , controls = controls
+    , weapon = MegaBlaster { used = False }
     }
 
 
@@ -100,12 +101,16 @@ update diff explosions { current, other } =
     )
 
 
-shoot : Keyboard.Extra.Key -> { current : Bike, other : Bike } -> List Explosion
+shoot : Keyboard.Extra.Key -> { current : Bike, other : Bike } -> ( Bike, Maybe Explosion )
 shoot key { current, other } =
     if key == current.controls.up then
-        [ Weapon.shoot MegaBlaster current.direction current.position (current.trail ++ other.trail) ]
+        let
+            ( weapon, explosion ) =
+                Weapon.shoot current (current.trail ++ other.trail)
+        in
+        ( { current | weapon = weapon }, explosion )
     else
-        []
+        ( current, Nothing )
 
 
 turn : Keyboard.Extra.Key -> Bike -> Bike

@@ -7,11 +7,14 @@
   },
   "scripts": {
     "start": "elm-live src/Main.elm",
-    "test": "elm-doc-test && elm-test"
+    "test": "elm-verify-examples && elm-test"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ohanhi/bike-wars.git"
   },
-  "license": "BSD-3-Clause"
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "elm": "0.18"
+  }
 }

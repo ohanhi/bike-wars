@@ -34,6 +34,7 @@ type alias Bike =
     , direction : Direction
     , color : String
     , controls : Controls
+    , weapon : Weapon
     }
 
 
@@ -53,4 +54,6 @@ type alias Obstacle =
 
 
 type Weapon
-    = MegaBlaster
+    = MegaBlaster { used : Bool }
+    | AssaultBazooka { shotsLeft : Int }
+    | Afterburner { ticksLeft : Int }

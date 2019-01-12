@@ -1,12 +1,4 @@
-module Trail exposing (..)
-
-{-| Doctest imports
-
-    import Math.Vector2 exposing (vec2)
-    import Types exposing (..)
-    import Helpers exposing (..)
-
--}
+module Trail exposing (breakIfNecessary, breakLines, breakTrail, cutWith, horizontalPairs, verticalPairs)
 
 import Explosion
 import Helpers exposing (..)
@@ -36,7 +28,16 @@ breakTrail explosion trail =
 
 {-| Remove parts of the trail that are under the explosion.
 
+    import Math.Vector2 exposing (vec2)
+    import Types exposing (..)
+    import Helpers exposing (..)
+
 Simple horizontals
+
+    breakLines
+      { center = vec2 0 0, size = 100, ticksLeft = 30 }
+      [ Horizontal (vec2 100 0, vec2 100 0) ]
+    --> [ Horizontal (vec2 100 0, vec2 100 0) ]
 
     breakLines
       { center = vec2 0 0, size = 100, ticksLeft = 30 }
@@ -184,12 +185,14 @@ horizontalPairs { n, w, s, e } (( end, start ) as points) =
         mapSmall =
             if smallIsStart then
                 Tuple.mapSecond
+
             else
                 Tuple.mapFirst
 
         mapLarge =
             if smallIsStart then
                 Tuple.mapFirst
+
             else
                 Tuple.mapSecond
     in
@@ -216,6 +219,7 @@ horizontalPairs { n, w, s, e } (( end, start ) as points) =
                     [ mapSmall (setX e) points
                     , mapLarge (setX w) points
                     ]
+
                 else
                     [ mapLarge (setX w) points
                     , mapSmall (setX e) points
@@ -229,6 +233,7 @@ horizontalPairs { n, w, s, e } (( end, start ) as points) =
 
             ( True, True, _ ) ->
                 []
+
     else
         [ points ]
 
@@ -248,12 +253,14 @@ verticalPairs { n, w, s, e } (( end, start ) as points) =
         mapSmall =
             if smallIsStart then
                 Tuple.mapSecond
+
             else
                 Tuple.mapFirst
 
         mapLarge =
             if smallIsStart then
                 Tuple.mapFirst
+
             else
                 Tuple.mapSecond
     in
@@ -286,9 +293,11 @@ verticalPairs { n, w, s, e } (( end, start ) as points) =
                     [ mapSmall (setY s) points
                     , mapLarge (setY n) points
                     ]
+
                 else
                     [ mapLarge (setY n) points
                     , mapSmall (setY s) points
                     ]
+
     else
         [ points ]

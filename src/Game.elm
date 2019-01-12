@@ -114,12 +114,18 @@ pureUpdate msg model =
                         ( one, two ) =
                             model.bikes
 
-                        shots =
+                        ( oneUpdated, oneShot ) =
+                            Bike.shoot key { current = two, other = one }
+
+                        ( twoUpdated, twoShot ) =
                             Bike.shoot key { current = one, other = two }
-                                ++ Bike.shoot key { current = two, other = one }
+
+                        shots =
+                            [ oneShot, twoShot ]
+                                |> List.filterMap identity
                     in
                     { model
-                        | bikes = ( Bike.turn key one, Bike.turn key two )
+                        | bikes = ( Bike.turn key oneUpdated, Bike.turn key twoUpdated )
                         , explosions = shots ++ model.explosions
                     }
 
