@@ -8,6 +8,7 @@ import Explosion
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Keyboard exposing (Key(..))
+import Keyboard.Arrows
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Types exposing (..)
@@ -94,8 +95,14 @@ subscriptions model =
 
             else
                 []
+
+        keyParser =
+            Keyboard.oneOf
+                [ Keyboard.Arrows.arrowKey
+                , Keyboard.whitespaceKey
+                ]
     in
-    Sub.batch ([ Keyboard.downs (Keyboard.anyKey >> KeyDown) ] ++ ticks)
+    Sub.batch ([ Keyboard.downs (keyParser >> KeyDown) ] ++ ticks)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -141,7 +148,7 @@ handleInput model key =
             }
 
         _ ->
-            if key == Character " " then
+            if key == Spacebar then
                 { initModel | status = Running }
 
             else
