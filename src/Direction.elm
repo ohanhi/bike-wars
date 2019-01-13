@@ -1,11 +1,6 @@
-module Direction exposing (..)
+module Direction exposing (turnLeft, turnRight)
 
-
-type Direction
-    = North
-    | East
-    | South
-    | West
+import Types exposing (Direction(..))
 
 
 turnRight : Direction -> Direction

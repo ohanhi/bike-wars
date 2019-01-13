@@ -1,7 +1,6 @@
-module Constants exposing (..)
+module Constants exposing (bikeSize, colors, gameBounds, h, speedC, ticksPerSecond, trailSize, w)
 
-import Math.Vector2 exposing (vec2)
-import Types exposing (Trail)
+import Math.Vector2 exposing (Vec2, vec2)
 
 
 bikeSize : Float
@@ -34,7 +33,7 @@ ticksPerSecond =
     60
 
 
-gameBounds : Trail
+gameBounds : List (List Vec2)
 gameBounds =
     [ [ vec2 0 0
       , vec2 w 0

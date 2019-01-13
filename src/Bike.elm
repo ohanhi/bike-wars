@@ -1,25 +1,26 @@
-module Bike exposing (..)
+module Bike exposing (bikeForm, cons, frontWall, initBike, omitLastSections, shoot, swapPosition, toObstacle, turn, update, view)
 
 import BikePhysics exposing (..)
 import Constants exposing (bikeSize, speedC)
-import Direction exposing (..)
 import Explosion
-import Keyboard.Extra
+import Keyboard exposing (Key)
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Trail
 import Types exposing (..)
+import Weapon
 
 
-initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
-initBike controls color ( x, y ) direction =
-    { position = vec2 x y
-    , trail = [ [ vec2 x y, vec2 x y ] ]
+initBike : Controls -> String -> Vec2 -> Direction -> Weapon -> Bike
+initBike controls color pos direction weapon =
+    { position = pos
+    , trail = [ [ pos, pos ] ]
     , collided = False
     , direction = direction
     , color = color
     , controls = controls
+    , weapon = weapon
     }
 
 
@@ -86,6 +87,7 @@ update diff explosions { current, other } =
             if collided then
                 current.trail
                     |> Trail.breakIfNecessary explosions
+
             else
                 current.trail
                     |> swapPosition current.position
@@ -100,7 +102,20 @@ update diff explosions { current, other } =
     )
 
 
-turn : Keyboard.Extra.Key -> Bike -> Bike
+shoot : Key -> { current : Bike, other : Bike } -> ( Bike, Maybe Explosion )
+shoot key { current, other } =
+    if key == current.controls.up then
+        let
+            ( weapon, explosion ) =
+                Weapon.shoot current (current.trail ++ other.trail)
+        in
+        ( { current | weapon = weapon }, explosion )
+
+    else
+        ( current, Nothing )
+
+
+turn : Key -> Bike -> Bike
 turn key bike =
     if bike.controls.left == key || bike.controls.right == key then
         { bike
@@ -110,6 +125,7 @@ turn key bike =
                     |> swapPosition bike.position
                     |> cons bike.position
         }
+
     else
         bike
 
@@ -117,16 +133,16 @@ turn key bike =
 toObstacle : Bike -> Obstacle
 toObstacle bike =
     let
-        ( cx, cy ) =
-            Vec2.toTuple bike.position
+        { x, y } =
+            Vec2.toRecord bike.position
 
         r =
             bikeSize / 2
     in
-    { w = cx - r
-    , e = cx + r
-    , n = cy - r
-    , s = cy + r
+    { w = x - r
+    , e = x + r
+    , n = y - r
+    , s = y + r
     }
 
 
@@ -156,28 +172,28 @@ view bike =
         transformValue =
             String.join ""
                 [ "translate("
-                , toString (posX - bikeSize)
+                , String.fromFloat (posX - bikeSize)
                 , " "
-                , toString (posY - bikeSize)
+                , String.fromFloat (posY - bikeSize)
                 , ") rotate("
                 , rotation
                 , " "
-                , toString bikeSize
+                , String.fromFloat bikeSize
                 , " "
-                , toString bikeSize
+                , String.fromFloat bikeSize
                 , ")"
                 ]
 
         trail =
             bike.trail
                 |> List.map
-                    (List.map (\vec -> toString (getX vec) ++ "," ++ toString (getY vec))
+                    (List.map (\vec -> String.fromFloat (getX vec) ++ "," ++ String.fromFloat (getY vec))
                         >> String.join " "
                         >> (\polylinePoints ->
                                 polyline
                                     [ fill "none"
                                     , stroke bike.color
-                                    , strokeWidth (toString (bikeSize / 2))
+                                    , strokeWidth (String.fromFloat (bikeSize / 2))
                                     , strokeLinecap "square"
                                     , points polylinePoints
                                     ]
@@ -188,6 +204,7 @@ view bike =
         bikeView =
             if bike.collided then
                 []
+
             else
                 [ g [ transform transformValue ] [ bikeForm bikeSize bike.color ] ]
     in
@@ -197,8 +214,8 @@ view bike =
 bikeForm : Float -> String -> Svg msg
 bikeForm bikeSize color =
     svg
-        [ width (toString (2 * bikeSize))
-        , height (toString (2 * bikeSize))
+        [ width (String.fromFloat (2 * bikeSize))
+        , height (String.fromFloat (2 * bikeSize))
         , viewBox "0 0 210 297"
         ]
         [ g []

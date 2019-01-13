@@ -1,16 +1,9 @@
 module BikePhysics exposing (collision, computeDirection, computePosition)
 
-{-| Doctest imports
-
-    import Math.Vector2 exposing (vec2)
-    import Direction exposing (..)
-
--}
-
 import Constants exposing (..)
 import Direction exposing (..)
 import Helpers exposing (..)
-import Keyboard.Extra exposing (Key(..))
+import Keyboard exposing (Key(..))
 import Math.Vector2 as Vec2 exposing (Vec2, getX, getY, vec2)
 import Types exposing (..)
 
@@ -42,8 +35,10 @@ computeDirection : Controls -> Direction -> Key -> Direction
 computeDirection controls direction key =
     if key == controls.left then
         turnLeft direction
+
     else if key == controls.right then
         turnRight direction
+
     else
         direction
 
@@ -62,8 +57,8 @@ collision { position, nextPosition } trail obstacles =
         try : Maybe Vec2 -> Maybe Vec2 -> Maybe Vec2
         try maybeOne maybeTwo =
             case maybeOne of
-                Just collision ->
-                    Just collision
+                Just collision_ ->
+                    Just collision_
 
                 Nothing ->
                     maybeTwo

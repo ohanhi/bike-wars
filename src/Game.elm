@@ -1,21 +1,24 @@
-module Game exposing (..)
+module Game exposing (Bikes, EndState(..), GameStatus(..), Model, Msg(..), Player(..), init, initBikes, initModel, pureUpdate, stepGame, subscriptions, svgView, update, view)
 
-import AnimationFrame
 import Bike
+import Browser
+import Browser.Events
 import Constants exposing (..)
-import Direction exposing (..)
 import Explosion
 import Html exposing (..)
 import Html.Attributes exposing (style)
-import Keyboard.Extra exposing (Key(..))
+import Keyboard exposing (Key(..))
+import Keyboard.Arrows
+import Math.Vector2 exposing (vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Types exposing (..)
+import Weapon
 
 
 type Player
-    = PlayerOne
-    | PlayerTwo
+    = PlayerRed
+    | PlayerGreen
 
 
 type EndState
@@ -30,7 +33,7 @@ type GameStatus
 
 
 type alias Bikes =
-    ( Bike, Bike )
+    { red : Bike, green : Bike }
 
 
 type alias Model =
@@ -42,21 +45,25 @@ type alias Model =
 
 type Msg
     = TimeDiff Float
-    | KeyDown Key
+    | KeyDown (Maybe Key)
 
 
 initBikes : Bikes
 initBikes =
-    ( Bike.initBike
-        { left = CharA, right = CharD, up = CharW }
-        colors.red
-        ( 20, h / 5 * 2 )
-        East
-    , Bike.initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
-        colors.green
-        ( w - 20, h / 5 * 3 )
-        West
-    )
+    { red =
+        Bike.initBike
+            { left = Character "a", right = Character "d", up = Character "w" }
+            colors.red
+            (vec2 20 (h / 5 * 2))
+            East
+            Weapon.initMegaBlaster
+    , green =
+        Bike.initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
+            colors.green
+            (vec2 (w - 20) (h / 5 * 3))
+            West
+            Weapon.initAssaultBazooka
+    }
 
 
 initModel : Model
@@ -90,16 +97,25 @@ subscriptions model =
 
         ticks =
             if needsToAnimate then
-                [ AnimationFrame.diffs TimeDiff ]
+                [ Browser.Events.onAnimationFrameDelta TimeDiff ]
+
             else
                 []
+
+        keyParser =
+            Keyboard.oneOf
+                [ Keyboard.Arrows.arrowKey
+                , Keyboard.whitespaceKey
+                ]
     in
-    Sub.batch ([ Keyboard.Extra.downs KeyDown ] ++ ticks)
+    Sub.batch ([ Keyboard.downs (keyParser >> KeyDown) ] ++ ticks)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    pureUpdate msg model ! []
+    ( pureUpdate msg model
+    , Cmd.none
+    )
 
 
 pureUpdate : Msg -> Model -> Model
@@ -108,58 +124,77 @@ pureUpdate msg model =
         TimeDiff diff ->
             stepGame model diff
 
-        KeyDown key ->
-            case model.status of
-                Running ->
-                    let
-                        ( one, two ) =
-                            model.bikes
-                    in
-                    { model
-                        | bikes = ( Bike.turn key one, Bike.turn key two )
-                    }
+        KeyDown maybeKey ->
+            maybeKey
+                |> Maybe.map (handleInput model)
+                |> Maybe.withDefault model
 
-                _ ->
-                    if key == Space then
-                        { initModel | status = Running }
-                    else
-                        model
+
+handleInput : Model -> Key -> Model
+handleInput model key =
+    case model.status of
+        Running ->
+            let
+                { red, green } =
+                    model.bikes
+
+                ( redUpdated, redShot ) =
+                    Bike.shoot key { current = red, other = green }
+
+                ( greenUpdated, greenShot ) =
+                    Bike.shoot key { current = green, other = red }
+
+                shots =
+                    [ redShot, greenShot ]
+                        |> List.filterMap identity
+            in
+            { model
+                | bikes = { red = Bike.turn key redUpdated, green = Bike.turn key greenUpdated }
+                , explosions = shots ++ model.explosions
+            }
+
+        _ ->
+            if key == Spacebar then
+                { initModel | status = Running }
+
+            else
+                model
 
 
 stepGame : Model -> Float -> Model
-stepGame model diff =
+stepGame ({ bikes } as model) diff =
     let
-        ( oldOne, oldTwo ) =
-            model.bikes
-
         explosions =
             model.explosions
                 |> Explosion.update
 
-        ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
-            ( Bike.update diff explosions { current = oldOne, other = oldTwo }
-            , Bike.update diff explosions { current = oldTwo, other = oldOne }
+        ( ( nextRed, expRed ), ( nextGreen, expGreen ) ) =
+            ( Bike.update diff explosions { current = bikes.red, other = bikes.green }
+            , Bike.update diff explosions { current = bikes.green, other = bikes.red }
             )
 
         nextExplosions =
             explosions
-                |> List.append (List.filterMap identity [ expOne, expTwo ])
+                |> List.append (List.filterMap identity [ expRed, expGreen ])
 
         allCollided =
-            nextOne.collided && nextTwo.collided
+            nextRed.collided && nextGreen.collided
 
         status =
             if allCollided then
                 GameOver Draw
-            else if nextOne.collided then
-                GameOver (GameWon PlayerTwo)
-            else if nextTwo.collided then
-                GameOver (GameWon PlayerOne)
+
+            else if nextRed.collided then
+                GameOver (GameWon PlayerGreen)
+
+            else if nextGreen.collided then
+                GameOver (GameWon PlayerRed)
+
             else
                 Running
     in
     { model
-        | bikes = ( nextOne, nextTwo )
+        | bikes = { red = nextRed, green = nextGreen }
         , status = status
         , explosions = nextExplosions
     }
@@ -167,14 +202,12 @@ stepGame model diff =
 
 view : Model -> Html never
 view model =
-    div [ Html.Attributes.style [ ( "background-color", colors.grey ) ] ]
+    div [ Html.Attributes.style "background-color" colors.grey ]
         [ svg
-            [ viewBox ([ 0, 0, w, h ] |> List.map toString |> String.join " ")
-            , Html.Attributes.style
-                [ ( "height", "100vh" )
-                , ( "display", "block" )
-                , ( "margin", "0 auto" )
-                ]
+            [ viewBox ([ 0, 0, w, h ] |> List.map String.fromFloat |> String.join " ")
+            , Html.Attributes.style "height" "100vh"
+            , Html.Attributes.style "display" "block"
+            , Html.Attributes.style "margin" "0 auto"
             ]
             (svgView model)
         ]
@@ -184,27 +217,27 @@ svgView : Model -> List (Svg never)
 svgView model =
     let
         translucentRect =
-            rect [ width (toString w), height (toString h), fill "rgba(0,0,0,0.5)" ] []
+            rect [ width (String.fromFloat w), height (String.fromFloat h), fill "rgba(0,0,0,0.5)" ] []
 
         makeOverlay string xOffset =
             [ translucentRect
             , text_
-                [ x (toString (w / 2))
-                , y (toString (h / 2))
+                [ x (String.fromFloat (w / 2))
+                , y (String.fromFloat (h / 2))
                 , fontSize "20"
                 , fontFamily "monospace"
                 , fill colors.white
-                , transform ("translate(" ++ toString xOffset ++ ", -10)")
+                , transform ("translate(" ++ String.fromFloat xOffset ++ ", -10)")
                 ]
                 [ Svg.text string ]
             ]
 
         endOverlay state =
             case state of
-                GameWon PlayerOne ->
+                GameWon PlayerRed ->
                     makeOverlay "Red wins!" -50
 
-                GameWon PlayerTwo ->
+                GameWon PlayerGreen ->
                     makeOverlay "Green wins!" -70
 
                 Draw ->
@@ -220,14 +253,11 @@ svgView model =
 
                 GameOver endState ->
                     endOverlay endState
-
-        ( one, two ) =
-            model.bikes
     in
-    [ rect [ width (toString w), height (toString h), stroke colors.grey, strokeWidth (toString bikeSize), fill colors.blue ] []
+    [ rect [ width (String.fromFloat w), height (String.fromFloat h), stroke colors.grey, strokeWidth (String.fromFloat bikeSize), fill colors.blue ] []
     , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill colors.white ] [ Svg.text "Bike Wars" ]
     ]
-        ++ Bike.view one
-        ++ Bike.view two
+        ++ Bike.view model.bikes.red
+        ++ Bike.view model.bikes.green
         ++ Explosion.view model.explosions
         ++ overlay model.status

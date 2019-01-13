@@ -1,8 +1,14 @@
-module Types exposing (..)
+module Types exposing (Bike, Controls, Direction(..), Explosion, Line(..), Obstacle, Trail, Weapon(..))
 
-import Direction exposing (Direction)
-import Keyboard.Extra exposing (Key)
+import Keyboard exposing (Key)
 import Math.Vector2 exposing (Vec2)
+
+
+type Direction
+    = North
+    | East
+    | South
+    | West
 
 
 type Line
@@ -28,6 +34,7 @@ type alias Bike =
     , direction : Direction
     , color : String
     , controls : Controls
+    , weapon : Weapon
     }
 
 
@@ -44,3 +51,9 @@ type alias Obstacle =
     , s : Float
     , w : Float
     }
+
+
+type Weapon
+    = MegaBlaster { used : Bool }
+    | AssaultBazooka { shotsLeft : Int }
+    | Afterburner { ticksLeft : Int }
