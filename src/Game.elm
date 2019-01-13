@@ -9,14 +9,16 @@ import Html exposing (..)
 import Html.Attributes exposing (style)
 import Keyboard exposing (Key(..))
 import Keyboard.Arrows
+import Math.Vector2 exposing (vec2)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Types exposing (..)
+import Weapon
 
 
 type Player
-    = PlayerOne
-    | PlayerTwo
+    = PlayerRed
+    | PlayerGreen
 
 
 type EndState
@@ -31,7 +33,7 @@ type GameStatus
 
 
 type alias Bikes =
-    ( Bike, Bike )
+    { red : Bike, green : Bike }
 
 
 type alias Model =
@@ -48,16 +50,20 @@ type Msg
 
 initBikes : Bikes
 initBikes =
-    ( Bike.initBike
-        { left = Character "a", right = Character "d", up = Character "w" }
-        colors.red
-        ( 20, h / 5 * 2 )
-        East
-    , Bike.initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
-        colors.green
-        ( w - 20, h / 5 * 3 )
-        West
-    )
+    { red =
+        Bike.initBike
+            { left = Character "a", right = Character "d", up = Character "w" }
+            colors.red
+            (vec2 20 (h / 5 * 2))
+            East
+            Weapon.initMegaBlaster
+    , green =
+        Bike.initBike { left = ArrowLeft, right = ArrowRight, up = ArrowUp }
+            colors.green
+            (vec2 (w - 20) (h / 5 * 3))
+            West
+            Weapon.initAssaultBazooka
+    }
 
 
 initModel : Model
@@ -129,21 +135,21 @@ handleInput model key =
     case model.status of
         Running ->
             let
-                ( one, two ) =
+                { red, green } =
                     model.bikes
 
-                ( oneUpdated, oneShot ) =
-                    Bike.shoot key { current = two, other = one }
+                ( redUpdated, redShot ) =
+                    Bike.shoot key { current = red, other = green }
 
-                ( twoUpdated, twoShot ) =
-                    Bike.shoot key { current = one, other = two }
+                ( greenUpdated, greenShot ) =
+                    Bike.shoot key { current = green, other = red }
 
                 shots =
-                    [ oneShot, twoShot ]
+                    [ redShot, greenShot ]
                         |> List.filterMap identity
             in
             { model
-                | bikes = ( Bike.turn key oneUpdated, Bike.turn key twoUpdated )
+                | bikes = { red = Bike.turn key redUpdated, green = Bike.turn key greenUpdated }
                 , explosions = shots ++ model.explosions
             }
 
@@ -156,42 +162,39 @@ handleInput model key =
 
 
 stepGame : Model -> Float -> Model
-stepGame model diff =
+stepGame ({ bikes } as model) diff =
     let
-        ( oldOne, oldTwo ) =
-            model.bikes
-
         explosions =
             model.explosions
                 |> Explosion.update
 
-        ( ( nextOne, expOne ), ( nextTwo, expTwo ) ) =
-            ( Bike.update diff explosions { current = oldOne, other = oldTwo }
-            , Bike.update diff explosions { current = oldTwo, other = oldOne }
+        ( ( nextRed, expRed ), ( nextGreen, expGreen ) ) =
+            ( Bike.update diff explosions { current = bikes.red, other = bikes.green }
+            , Bike.update diff explosions { current = bikes.green, other = bikes.red }
             )
 
         nextExplosions =
             explosions
-                |> List.append (List.filterMap identity [ expOne, expTwo ])
+                |> List.append (List.filterMap identity [ expRed, expGreen ])
 
         allCollided =
-            nextOne.collided && nextTwo.collided
+            nextRed.collided && nextGreen.collided
 
         status =
             if allCollided then
                 GameOver Draw
 
-            else if nextOne.collided then
-                GameOver (GameWon PlayerTwo)
+            else if nextRed.collided then
+                GameOver (GameWon PlayerGreen)
 
-            else if nextTwo.collided then
-                GameOver (GameWon PlayerOne)
+            else if nextGreen.collided then
+                GameOver (GameWon PlayerRed)
 
             else
                 Running
     in
     { model
-        | bikes = ( nextOne, nextTwo )
+        | bikes = { red = nextRed, green = nextGreen }
         , status = status
         , explosions = nextExplosions
     }
@@ -231,10 +234,10 @@ svgView model =
 
         endOverlay state =
             case state of
-                GameWon PlayerOne ->
+                GameWon PlayerRed ->
                     makeOverlay "Red wins!" -50
 
-                GameWon PlayerTwo ->
+                GameWon PlayerGreen ->
                     makeOverlay "Green wins!" -70
 
                 Draw ->
@@ -250,14 +253,11 @@ svgView model =
 
                 GameOver endState ->
                     endOverlay endState
-
-        ( one, two ) =
-            model.bikes
     in
     [ rect [ width (String.fromFloat w), height (String.fromFloat h), stroke colors.grey, strokeWidth (String.fromFloat bikeSize), fill colors.blue ] []
     , text_ [ x "10", y "30", fontSize "20", fontFamily "monospace", fill colors.white ] [ Svg.text "Bike Wars" ]
     ]
-        ++ Bike.view one
-        ++ Bike.view two
+        ++ Bike.view model.bikes.red
+        ++ Bike.view model.bikes.green
         ++ Explosion.view model.explosions
         ++ overlay model.status

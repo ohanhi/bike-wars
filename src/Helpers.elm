@@ -85,13 +85,18 @@ toLine vecA vecB =
         Just (Horizontal ( vecA, vecB ))
 
     else
-        Debug.todo "Line invalid" ( a, b )
+        let
+            _ =
+                Debug.log "Line invalid" ( a, b )
+        in
+        Nothing
 
 
 tryCollision : (( Vec2, Vec2 ) -> Maybe Vec2) -> List ( Vec2, Vec2 ) -> Maybe Vec2
 tryCollision method linePoints =
     linePoints
         |> List.filterMap method
+        |> List.reverse
         |> List.head
 
 

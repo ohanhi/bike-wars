@@ -1,12 +1,5 @@
 module BikePhysics exposing (collision, computeDirection, computePosition)
 
-{-| Doctest imports
-
-    import Math.Vector2 exposing (vec2)
-    import Direction exposing (..)
-
--}
-
 import Constants exposing (..)
 import Direction exposing (..)
 import Helpers exposing (..)

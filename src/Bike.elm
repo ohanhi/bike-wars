@@ -12,15 +12,15 @@ import Types exposing (..)
 import Weapon
 
 
-initBike : Controls -> String -> ( Float, Float ) -> Direction -> Bike
-initBike controls color ( x, y ) direction =
-    { position = vec2 x y
-    , trail = [ [ vec2 x y, vec2 x y ] ]
+initBike : Controls -> String -> Vec2 -> Direction -> Weapon -> Bike
+initBike controls color pos direction weapon =
+    { position = pos
+    , trail = [ [ pos, pos ] ]
     , collided = False
     , direction = direction
     , color = color
     , controls = controls
-    , weapon = MegaBlaster { used = False }
+    , weapon = weapon
     }
 
 
